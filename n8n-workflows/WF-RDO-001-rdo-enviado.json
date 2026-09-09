@@ -1,0 +1,165 @@
+{
+  "name": "WF-RDO-001 RDO Enviado",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rdo-enviado",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-rdo-enviado",
+      "name": "Webhook RDO Enviado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 200],
+      "webhookId": "wh-rdo-enviado"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst data = input.body || input;\nreturn [{ json: data }];"
+      },
+      "id": "format-payload",
+      "name": "Format Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [300, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://evolution.metriclab.com.br/message/sendText/metriclab",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "dc7f8f5441562db151a69e1beb10164d4916f607891cd67f6d5d78fea6a8ac2c"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.superior_telefone || '5511999990010' }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ '📋 *RDO Recebido — MetricLab*\\n\\n*Encarregado:* ' + $json.nome + '\\n*Trecho:* ' + $json.trecho_nome + '\\n*Data:* ' + $json.data + ' — ' + $json.turno + '\\n*Clima:* ' + $json.clima_condicao + '\\n*Equipe:* ' + $json.total_equipe + ' colaboradores\\n*Máquinas:* ' + $json.total_maquinas + ' verificadas\\n*Fotos:* ' + $json.total_fotos + ' registros\\n\\n✅ Georreferenciado e assinado digitalmente.\\nAcesse o painel:\\nhttps://propostalote15.metriclab.com.br/demo' }}"
+            }
+          ]
+        }
+      },
+      "id": "evolution-send-rdo",
+      "name": "Evolution API -> Supervisor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 200],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://keadkoqnvabhyxbrfjax.supabase.co/rest/v1/demo_rdo_registros?id=eq.' + $json.rdo_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlYWRrb3FudmFiaHl4YnJmamF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzM0ODExMSwiZXhwIjoyMTAyOTI0MTExfQ.ern4dE-rtIuvXaogxhwIhw2s0ftzM80ntEDMEtx52BI"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlYWRrb3FudmFiaHl4YnJmamF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzM0ODExMSwiZXhwIjoyMTAyOTI0MTExfQ.ern4dE-rtIuvXaogxhwIhw2s0ftzM80ntEDMEtx52BI"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"status\": \"aprovado\"\n}"
+      },
+      "id": "supabase-auto-aprovacao",
+      "name": "Supabase Auto-Aprovação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [740, 200],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"rdo_id\": \"{{ $json.rdo_id }}\",\n  \"status\": \"aprovado\"\n}",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [960, 200]
+    }
+  ],
+  "connections": {
+    "Webhook RDO Enviado": {
+      "main": [
+        [
+          {
+            "node": "Format Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Payload": {
+      "main": [
+        [
+          {
+            "node": "Evolution API -> Supervisor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evolution API -> Supervisor": {
+      "main": [
+        [
+          {
+            "node": "Supabase Auto-Aprovação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Auto-Aprovação": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

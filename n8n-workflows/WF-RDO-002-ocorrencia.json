@@ -1,0 +1,209 @@
+{
+  "name": "WF-RDO-002 Ocorrência",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rdo-ocorrencia",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-ocorrencia",
+      "name": "Webhook Ocorrência",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 200],
+      "webhookId": "wh-rdo-ocorrencia"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst data = input.body || input;\nreturn [{ json: data }];"
+      },
+      "id": "format-ocorrencia",
+      "name": "Format Ocorrência Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [300, 200]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.gravidade }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "critica",
+              "output": 0
+            },
+            {
+              "value2": "alta",
+              "output": 0
+            }
+          ]
+        },
+        "fallbackOutput": 1
+      },
+      "id": "switch-gravidade",
+      "name": "Switch por Gravidade",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [520, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://evolution.metriclab.com.br/message/sendText/metriclab",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "dc7f8f5441562db151a69e1beb10164d4916f607891cd67f6d5d78fea6a8ac2c"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "5511999990010"
+            },
+            {
+              "name": "text",
+              "value": "={{ '🚨 *OCORRÊNCIA ' + ($json.gravidade ? $json.gravidade.toUpperCase() : 'ALTA') + ' — MetricLab*\\n\\n*Trecho:* ' + $json.trecho_nome + '\\n*Tipo:* ' + $json.tipo + '\\n*Registrado por:* ' + $json.nome + '\\n*Descrição:* ' + $json.descricao + '\\n\\n⚠️ Requer atenção imediata.' }}"
+            }
+          ]
+        }
+      },
+      "id": "evolution-critica",
+      "name": "Evolution -> Notificação Urgente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 100],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://evolution.metriclab.com.br/message/sendText/metriclab",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "dc7f8f5441562db151a69e1beb10164d4916f607891cd67f6d5d78fea6a8ac2c"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "5511999990010"
+            },
+            {
+              "name": "text",
+              "value": "={{ '⚠️ *Ocorrência Registrada — MetricLab*\\n\\n*Trecho:* ' + $json.trecho_nome + '\\n*Tipo:* ' + $json.tipo + ' — ' + $json.gravidade + '\\n*Registrado por:* ' + $json.nome + '\\n*Descrição:* ' + $json.descricao }}"
+            }
+          ]
+        }
+      },
+      "id": "evolution-padrao",
+      "name": "Evolution -> Notificação Padrão",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"notificado\": true\n}",
+        "options": {}
+      },
+      "id": "respond-ocorrencia",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1000, 200]
+    }
+  ],
+  "connections": {
+    "Webhook Ocorrência": {
+      "main": [
+        [
+          {
+            "node": "Format Ocorrência Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Ocorrência Payload": {
+      "main": [
+        [
+          {
+            "node": "Switch por Gravidade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch por Gravidade": {
+      "main": [
+        [
+          {
+            "node": "Evolution -> Notificação Urgente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Evolution -> Notificação Padrão",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evolution -> Notificação Urgente": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evolution -> Notificação Padrão": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
