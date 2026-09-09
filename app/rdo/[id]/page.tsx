@@ -62,7 +62,7 @@ export default function VisualizarRDOPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex flex-col justify-between">
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
         <HeaderMobile showBack={true} backHref="/menu" title="Visualizar RDO" />
         <div className="flex-1 flex items-center justify-center p-8 text-sm text-gray-500">
           Carregando dados do relatório...
@@ -73,7 +73,7 @@ export default function VisualizarRDOPage() {
 
   if (!rdo) {
     return (
-      <div className="min-h-screen bg-white flex flex-col justify-between">
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
         <HeaderMobile showBack={true} backHref="/menu" title="Visualizar RDO" />
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
           <p className="text-gray-500 text-sm">Relatório Diário de Obra não encontrado.</p>
@@ -95,7 +95,7 @@ export default function VisualizarRDOPage() {
   const fotosArr: string[] = Array.isArray(rdo.fotos) ? rdo.fotos : [];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col justify-between">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
       <HeaderMobile
         showBack={true}
         backHref="/menu"
@@ -106,9 +106,9 @@ export default function VisualizarRDOPage() {
 
       <main className="p-5 flex-1 space-y-6 pb-12">
         {/* Card Cabeçalho */}
-        <Card className="bg-blue-50/70 border-blue-200 p-4 space-y-2">
+        <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-blue-900 uppercase">
+            <span className="text-xs font-bold text-gray-500 uppercase">
               {trechoNome || 'Trecho da Obra'}
             </span>
             <Badge variant="blue" className="uppercase text-[10px]">
@@ -118,7 +118,7 @@ export default function VisualizarRDOPage() {
           <div className="text-sm font-bold text-gray-900">
             Encarregado: {usuarioNome || 'Operador'}
           </div>
-          <div className="flex items-center gap-4 text-xs text-gray-600 pt-1 border-t border-blue-100">
+          <div className="flex items-center gap-4 text-xs text-gray-600 pt-2 border-t border-gray-100">
             <div className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-blue-600" />
               <span>{rdo.data}</span>
@@ -136,7 +136,7 @@ export default function VisualizarRDOPage() {
             <FileText className="w-4 h-4 text-blue-600" />
             <span>Atividades do Dia</span>
           </div>
-          <Card className="p-4 bg-white border-gray-200 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+          <Card className="p-4 bg-white border border-gray-200 rounded-2xl shadow-sm text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
             {rdo.atividades || 'Nenhuma atividade descrita.'}
           </Card>
         </div>
@@ -155,7 +155,7 @@ export default function VisualizarRDOPage() {
             {equipeArr.map((m, idx) => (
               <div
                 key={idx}
-                className="p-3 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between text-xs"
+                className="p-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm flex items-center justify-between text-xs"
               >
                 <div>
                   <span className="font-bold text-gray-900 block">{m.nome}</span>
@@ -184,7 +184,7 @@ export default function VisualizarRDOPage() {
               {maquinasArr.map((mq, idx) => (
                 <div
                   key={idx}
-                  className="p-3 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between text-xs"
+                  className="p-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm flex items-center justify-between text-xs"
                 >
                   <div>
                     <span className="font-bold text-gray-900 capitalize block">
@@ -241,7 +241,7 @@ export default function VisualizarRDOPage() {
               <PenTool className="w-4 h-4 text-blue-600" />
               <span>Assinatura Digital</span>
             </div>
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl flex flex-col items-center">
+            <div className="p-4 bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col items-center">
               <img
                 src={rdo.assinatura_url}
                 alt="Assinatura do Encarregado"
@@ -256,7 +256,7 @@ export default function VisualizarRDOPage() {
 
         {/* GPS */}
         {rdo.geolat && rdo.geolng && (
-          <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-xl text-xs text-green-800">
+          <div className="flex items-center justify-between p-3.5 bg-green-50 border border-green-200 rounded-2xl text-xs text-green-800 shadow-sm">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-green-700" />
               <span className="font-semibold">Georreferenciado:</span>
@@ -271,7 +271,7 @@ export default function VisualizarRDOPage() {
           variant="outline"
           size="lg"
           onClick={() => router.push('/menu')}
-          className="w-full py-3.5 font-bold"
+          className="w-full py-4 font-bold rounded-xl"
         >
           Voltar ao Menu Principal
         </Button>

@@ -530,7 +530,7 @@ export default function NovoRDOPage() {
   if (loadingInitial || !session) return null;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col justify-between">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
       {/* Header Fixo */}
       <HeaderMobile
         showBack={true}
@@ -544,7 +544,7 @@ export default function NovoRDOPage() {
       />
 
       {/* Barra Linear de Progresso */}
-      <div className="w-full bg-gray-100 h-1.5">
+      <div className="w-full bg-gray-200 h-1.5">
         <div
           className="bg-blue-600 h-1.5 transition-all duration-300"
           style={{ width: `${(passo / 5) * 100}%` }}
@@ -564,9 +564,9 @@ export default function NovoRDOPage() {
               </p>
             </div>
 
-            <Card className="bg-gray-50 border-gray-200 p-5 space-y-4">
+            <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
                   📋
                 </div>
                 <div>
@@ -576,7 +576,7 @@ export default function NovoRDOPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
                   📅
                 </div>
                 <div>
@@ -611,7 +611,7 @@ export default function NovoRDOPage() {
             </div>
 
             {/* Card Clima */}
-            <Card className="p-5 border-gray-200 space-y-3">
+            <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
                   Condições Climáticas
@@ -623,15 +623,15 @@ export default function NovoRDOPage() {
               </div>
 
               <div className="grid grid-cols-3 gap-2 text-center pt-2">
-                <div className="p-3 bg-gray-50 rounded-xl">
+                <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl">
                   <div className="text-xs text-gray-500">Temperatura</div>
                   <div className="text-lg font-black text-gray-900 mt-0.5">{clima.temperatura}°C</div>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-xl">
+                <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl">
                   <div className="text-xs text-gray-500">Umidade</div>
                   <div className="text-lg font-black text-gray-900 mt-0.5">{clima.umidade}%</div>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-xl">
+                <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl">
                   <div className="text-xs text-gray-500">Vento</div>
                   <div className="text-lg font-black text-gray-900 mt-0.5">{clima.vento} km/h</div>
                 </div>
@@ -678,12 +678,12 @@ export default function NovoRDOPage() {
               type="button"
               disabled={uploadingCracha}
               onClick={() => crachaInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 bg-gray-50/50 hover:bg-blue-50/30 transition-all active:scale-[0.99]"
+              className="w-full border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 bg-white hover:bg-blue-50/30 transition-all active:scale-[0.99] shadow-sm"
             >
               {uploadingCracha ? (
                 <RefreshCw className="w-10 h-10 text-blue-600 animate-spin" />
               ) : (
-                <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+                <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center shadow-sm">
                   <QrCode className="w-9 h-9 text-gray-400" />
                 </div>
               )}
@@ -698,7 +698,7 @@ export default function NovoRDOPage() {
             </button>
 
             {/* Atalhos Rápidos Demo */}
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs space-y-2">
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 text-xs space-y-2.5 shadow-sm">
               <div className="flex items-center justify-between text-gray-500 font-semibold">
                 <span>Ou adicione membros da equipe demo:</span>
               </div>
@@ -706,21 +706,21 @@ export default function NovoRDOPage() {
                 <button
                   type="button"
                   onClick={() => adicionarExemploEquipe('Antônio Santos', 'Operador de Escavadeira')}
-                  className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-700 hover:border-blue-400 hover:text-blue-600 active:scale-95 font-medium transition-colors"
+                  className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 active:scale-95 font-medium transition-colors"
                 >
                   + Antônio (Op. Escavadeira)
                 </button>
                 <button
                   type="button"
                   onClick={() => adicionarExemploEquipe('Sebastião Costa', 'Motorista de Basculante')}
-                  className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-700 hover:border-blue-400 hover:text-blue-600 active:scale-95 font-medium transition-colors"
+                  className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 active:scale-95 font-medium transition-colors"
                 >
                   + Sebastião (Motorista)
                 </button>
                 <button
                   type="button"
                   onClick={() => adicionarExemploEquipe('Raimundo Nonato', 'Ajudante Geral')}
-                  className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-700 hover:border-blue-400 hover:text-blue-600 active:scale-95 font-medium transition-colors"
+                  className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 active:scale-95 font-medium transition-colors"
                 >
                   + Raimundo (Ajudante)
                 </button>
@@ -735,7 +735,7 @@ export default function NovoRDOPage() {
               </div>
 
               {equipe.length === 0 ? (
-                <div className="p-6 text-center text-xs text-gray-400 border border-dashed rounded-xl">
+                <div className="p-8 text-center text-xs text-gray-400 bg-white border border-dashed border-gray-300 rounded-2xl">
                   Nenhum colaborador adicionado ainda. Fotografe um crachá ou use os atalhos acima.
                 </div>
               ) : (
@@ -743,7 +743,7 @@ export default function NovoRDOPage() {
                   {equipe.map((m, idx) => (
                     <div
                       key={m.id || idx}
-                      className="flex items-center justify-between p-3.5 bg-white border border-gray-200 rounded-xl shadow-sm"
+                      className="flex items-center justify-between p-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm"
                     >
                       <div className="flex items-center gap-3">
                         {m.foto_cracha_url ? (
@@ -753,7 +753,7 @@ export default function NovoRDOPage() {
                             className="w-10 h-10 rounded-lg object-cover border border-gray-200"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
                             {m.nome.substring(0, 2).toUpperCase()}
                           </div>
                         )}
@@ -786,7 +786,7 @@ export default function NovoRDOPage() {
             {/* Modal Manual Fallback */}
             {showManualModal && (
               <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <Card className="w-full max-w-sm bg-white p-6 space-y-4">
+                <Card className="w-full max-w-sm bg-white border border-gray-200 rounded-2xl shadow-xl p-6 space-y-4">
                   <h3 className="text-base font-bold text-gray-900">
                     Dados do Colaborador
                   </h3>
@@ -876,10 +876,10 @@ export default function NovoRDOPage() {
                 };
 
                 return (
-                  <Card key={maq.id} className="p-4 border-gray-200 space-y-3">
+                  <Card key={maq.id} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-700">
+                        <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-gray-700">
                           <Truck className="w-4 h-4 text-gray-600" />
                         </div>
                         <div>
@@ -960,7 +960,7 @@ export default function NovoRDOPage() {
                           placeholder={`Motivo da ${status === 'parada' ? 'parada' : 'manutenção'}...`}
                           value={current?.observacao || ''}
                           onChange={(e) => setObs(e.target.value)}
-                          className="w-full text-xs p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full text-xs p-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                         />
                       </div>
                     )}
@@ -1005,7 +1005,7 @@ export default function NovoRDOPage() {
               type="button"
               disabled={uploadingFotoDia}
               onClick={() => fotosInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 bg-gray-50/50 hover:bg-blue-50/30 transition-all active:scale-[0.99]"
+              className="w-full border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 bg-white hover:bg-blue-50/30 transition-all active:scale-[0.99] shadow-sm"
             >
               {uploadingFotoDia ? (
                 <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
@@ -1084,7 +1084,7 @@ export default function NovoRDOPage() {
             </div>
 
             {/* Card Resumo */}
-            <Card className="bg-gray-50 border-gray-200 p-5 space-y-2.5 text-xs text-gray-700">
+            <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 space-y-3 text-xs text-gray-700">
               <div className="flex justify-between font-medium">
                 <span className="text-gray-500">Trecho:</span>
                 <span className="font-bold text-gray-900">{session.trecho_nome}</span>
@@ -1130,7 +1130,7 @@ export default function NovoRDOPage() {
                 )}
               </div>
 
-              <div className="bg-white border-2 border-gray-300 rounded-xl overflow-hidden shadow-inner touch-none">
+              <div className="bg-white border-2 border-gray-300 rounded-2xl overflow-hidden shadow-inner touch-none">
                 <canvas
                   ref={canvasRef}
                   width={380}
@@ -1148,7 +1148,7 @@ export default function NovoRDOPage() {
             </div>
 
             {/* GPS Status */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl text-xs">
+            <div className="flex items-center justify-between p-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm text-xs">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-blue-600" />
                 <span className="font-medium text-gray-700">Georreferenciamento:</span>

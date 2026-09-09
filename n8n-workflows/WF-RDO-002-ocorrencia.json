@@ -1,5 +1,12 @@
 {
+  "id": "wfRdo00000000002",
   "name": "WF-RDO-002 Ocorrência",
+  "versionId": "a2222222-2222-4222-8222-222222222222",
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo"
+  },
   "nodes": [
     {
       "parameters": {
@@ -201,9 +208,5 @@
         ]
       ]
     }
-  },
-  "active": true,
-  "settings": {
-    "executionOrder": "v1"
   }
 }
