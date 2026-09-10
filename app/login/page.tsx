@@ -1,67 +1,73 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { KeyRound, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
+import React, { useState, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
+import { Lock, Smartphone, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-type OpcaoAcesso = 'chave' | 'magic';
+type Estado = 'inicial' | 'chave' | 'codigo_unico';
 
 function LoginContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  const [opcao, setOpcao] = useState<OpcaoAcesso>('chave');
+  const [estado, setEstado] = useState<Estado>('inicial');
   const [nome, setNome] = useState('');
   const [chaveAcesso, setChaveAcesso] = useState('');
-  const [email, setEmail] = useState('');
+  const [codigoOtp, setCodigoOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const [magicEnviado, setMagicEnviado] = useState(false);
+  const [shaking, setShaking] = useState(false);
 
-  // Escutar login por magic link via Supabase Auth
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const sessionData = {
-          usuario_id: session.user.id,
-          nome: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Encarregado RDO',
-          trecho_id: 'trecho-15-19',
-          trecho_nome: 'Pacote 15 e 19',
-          pacote: '15 e 19',
-          cargo: 'Supervisor / Gestão',
-        };
-        localStorage.setItem('ml_rdo_session', JSON.stringify(sessionData));
-        document.cookie = `ml_rdo_session=${encodeURIComponent(
-          JSON.stringify(sessionData)
-        )}; path=/; max-age=604800; SameSite=Lax`;
-        router.push('/menu');
-      }
-    });
+  const triggerShake = (mensagem?: string) => {
+    setShaking(true);
+    if (mensagem) setErro(mensagem);
+    setTimeout(() => setShaking(false), 450);
+  };
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [router]);
+  const handleVoltar = () => {
+    setEstado('inicial');
+    setChaveAcesso('');
+    setCodigoOtp('');
+    setErro(null);
+  };
 
-  // OPÇÃO 1 — Entrar com nome e chave
-  const handleSubmitChave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const saveSession = (sessionData: {
+    usuario_id: string;
+    nome: string;
+    trecho_id: string;
+    trecho_nome: string;
+    pacote: string;
+    cargo: string;
+  }) => {
+    localStorage.setItem('ml_rdo_session', JSON.stringify(sessionData));
+    document.cookie = `ml_rdo_session=${encodeURIComponent(
+      JSON.stringify(sessionData)
+    )}; path=/; max-age=604800; SameSite=Lax`;
+  };
+
+  // ESTADO 2A: Validação com Nome e Chave
+  const handleEntrarComChave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setErro(null);
 
     const nomeLimpo = nome.trim();
     const chaveLimpa = chaveAcesso.trim();
 
-    if (!nomeLimpo || !chaveLimpa) {
-      setErro('Preencha seu nome e chave de acesso.');
+    if (!nomeLimpo) {
+      triggerShake('Informe seu nome completo.');
+      return;
+    }
+
+    if (!chaveLimpa) {
+      triggerShake('Informe a chave de acesso.');
       return;
     }
 
     setLoading(true);
 
-    const isDemoCode = chaveLimpa.toUpperCase().startsWith('RDO') || chaveLimpa === '123456';
+    const isDemo =
+      chaveLimpa === '123456' ||
+      chaveLimpa.toUpperCase().startsWith('RDO');
 
     try {
       const { data, error } = await supabase
@@ -74,361 +80,403 @@ function LoginContent() {
 
       if (data && data.length > 0) {
         const user = data[0];
-        const sessionData = {
+        saveSession({
           usuario_id: user.id,
           nome: user.nome,
           trecho_id: user.trecho_id,
           trecho_nome: user.trecho_nome || 'Trecho Geral',
-          pacote: user.pacote,
+          pacote: user.pacote || '15 e 19',
           cargo: user.cargo || 'Encarregado',
-        };
-
-        localStorage.setItem('ml_rdo_session', JSON.stringify(sessionData));
-        document.cookie = `ml_rdo_session=${encodeURIComponent(
-          JSON.stringify(sessionData)
-        )}; path=/; max-age=604800; SameSite=Lax`;
-
+        });
         router.push('/menu');
         return;
       }
 
-      // Fallback demo caso seja chave no padrão RDO001, RDO002 etc ou 123456
-      if (isDemoCode) {
-        const sessionData = {
+      // Bypass Demo caso chave seja 123456 ou comece com RDO
+      if (isDemo) {
+        saveSession({
           usuario_id: `demo-${chaveLimpa}`,
           nome: nomeLimpo,
           trecho_id: 'trecho-15-19',
           trecho_nome: 'Pacote 15 e 19',
           pacote: '15 e 19',
           cargo: 'Encarregado de Obra',
-        };
-
-        localStorage.setItem('ml_rdo_session', JSON.stringify(sessionData));
-        document.cookie = `ml_rdo_session=${encodeURIComponent(
-          JSON.stringify(sessionData)
-        )}; path=/; max-age=604800; SameSite=Lax`;
-
+        });
         router.push('/menu');
         return;
       }
 
-      setErro('Nome ou chave de acesso inválidos.');
       setLoading(false);
-    } catch (err: any) {
-      if (isDemoCode) {
-        const sessionData = {
+      triggerShake('Chave inválida');
+    } catch (err) {
+      console.error('[handleEntrarComChave]', err);
+      if (isDemo) {
+        saveSession({
           usuario_id: `demo-${chaveLimpa}`,
           nome: nomeLimpo,
           trecho_id: 'trecho-15-19',
           trecho_nome: 'Pacote 15 e 19',
           pacote: '15 e 19',
           cargo: 'Encarregado de Obra',
-        };
-
-        localStorage.setItem('ml_rdo_session', JSON.stringify(sessionData));
-        document.cookie = `ml_rdo_session=${encodeURIComponent(
-          JSON.stringify(sessionData)
-        )}; path=/; max-age=604800; SameSite=Lax`;
-
+        });
         router.push('/menu');
         return;
       }
-
-      console.error('Erro ao validar acesso:', err);
-      setErro('Erro ao validar acesso. Tente novamente.');
       setLoading(false);
+      triggerShake('Chave inválida');
     }
   };
 
-  // OPÇÃO 2 — Link Mágico
-  const handleSubmitMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ESTADO 2B: Validação com Código Único (Demo 123456)
+  const handleConfirmarCodigoUnico = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setErro(null);
 
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      setErro('Digite um e-mail válido.');
+    const nomeLimpo = nome.trim();
+    const codigoLimpo = codigoOtp.trim();
+
+    if (!codigoLimpo) {
+      triggerShake('Digite o código recebido.');
       return;
     }
 
     setLoading(true);
 
-    // Simulação para demo@metriclab.com.br
-    if (cleanEmail === 'demo@metriclab.com.br') {
-      setTimeout(() => {
-        const sessionData = {
-          usuario_id: 'demo-magic-user',
-          nome: 'Demo MetricLab',
-          trecho_id: 'trecho-15-19',
-          trecho_nome: 'Pacote 15 e 19',
-          pacote: '15 e 19',
-          cargo: 'Supervisor / Gestão',
-        };
-
-        localStorage.setItem('ml_rdo_session', JSON.stringify(sessionData));
-        document.cookie = `ml_rdo_session=${encodeURIComponent(
-          JSON.stringify(sessionData)
-        )}; path=/; max-age=604800; SameSite=Lax`;
-
-        router.push('/menu');
-      }, 500);
+    // Aceita 123456 para qualquer input
+    if (codigoLimpo === '123456') {
+      saveSession({
+        usuario_id: 'demo-otp-user',
+        nome: nomeLimpo || 'Encarregado Demo',
+        trecho_id: 'trecho-15-19',
+        trecho_nome: 'Pacote 15 e 19',
+        pacote: '15 e 19',
+        cargo: 'Encarregado de Obra',
+      });
+      router.push('/menu');
       return;
     }
 
+    // Busca se existe chave correspondente no banco
     try {
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: {
-          emailRedirectTo: `${origin}/menu`,
-        },
-      });
+      const { data } = await supabase
+        .from('demo_rdo_usuarios')
+        .select('*')
+        .eq('chave_acesso', codigoLimpo)
+        .eq('ativo', true)
+        .limit(1);
 
-      if (error) {
-        console.error('[signInWithOtp]', error.message);
-        setErro('Não foi possível enviar o link mágico agora. Tente novamente.');
-        setLoading(false);
+      if (data && data.length > 0) {
+        const user = data[0];
+        saveSession({
+          usuario_id: user.id,
+          nome: user.nome,
+          trecho_id: user.trecho_id,
+          trecho_nome: user.trecho_nome || 'Trecho Geral',
+          pacote: user.pacote || '15 e 19',
+          cargo: user.cargo || 'Encarregado',
+        });
+        router.push('/menu');
         return;
       }
 
-      setMagicEnviado(true);
       setLoading(false);
-    } catch (err: any) {
-      console.error('[handleSubmitMagicLink]', err);
-      setErro('Erro de conexão ao solicitar link mágico.');
+      triggerShake('Código inválido');
+    } catch (err) {
+      console.error('[handleConfirmarCodigoUnico]', err);
       setLoading(false);
+      triggerShake('Código inválido');
     }
   };
 
   return (
-    <div className="w-full max-w-[360px]">
-      {/* Opções de Acesso Lado a Lado (estilo gestão Google/Microsoft) */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <button
-          type="button"
-          onClick={() => {
-            setOpcao('chave');
-            setErro(null);
-          }}
-          className={`h-11 rounded-lg border text-sm font-medium inline-flex items-center justify-center gap-2 transition-all select-none cursor-pointer ${
-            opcao === 'chave'
-              ? 'border-[#1A202C] bg-white text-[#1A202C] shadow-xs ring-1 ring-[#1A202C]'
-              : 'border-[#E2E8F0] bg-white/70 text-[#718096] hover:bg-white hover:text-[#1A202C] shadow-2xs'
-          }`}
-        >
-          <KeyRound className="size-4" />
-          <span>Nome e chave</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setOpcao('magic');
-            setErro(null);
-          }}
-          className={`h-11 rounded-lg border text-sm font-medium inline-flex items-center justify-center gap-2 transition-all select-none cursor-pointer ${
-            opcao === 'magic'
-              ? 'border-[#1A202C] bg-white text-[#1A202C] shadow-xs ring-1 ring-[#1A202C]'
-              : 'border-[#E2E8F0] bg-white/70 text-[#718096] hover:bg-white hover:text-[#1A202C] shadow-2xs'
-          }`}
-        >
-          <Sparkles className="size-4 text-[#FFC028]" />
-          <span>Link mágico</span>
-        </button>
-      </div>
-
-      {/* Divisor */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="flex-1 h-px bg-[#E2E8F0]" />
-        <span className="text-xs text-[#718096]">
-          {opcao === 'chave' ? 'credenciais de campo' : 'acesso sem senha'}
+    <div
+      className={`w-full max-w-[380px] bg-white rounded-[12px] border border-[#E5E5E3] p-8 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 ease-in-out ${
+        shaking ? 'animate-shake' : ''
+      }`}
+    >
+      {/* Logo */}
+      <div className="text-center">
+        <span className="text-[28px] font-bold text-[#111111] leading-none tracking-tight select-none">
+          m<span className="text-[#F5A623]">.</span>
         </span>
-        <div className="flex-1 h-px bg-[#E2E8F0]" />
       </div>
 
-      {/* Erro */}
-      {erro && (
-        <div className="mb-5 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600 font-medium text-center">
-          {erro}
-        </div>
-      )}
+      {/* Título e Subtítulo */}
+      <div className="text-center mt-4">
+        <h1 className="text-[22px] font-bold text-[#111111] leading-tight">
+          Relatório Diário de Obra
+        </h1>
+        <p className="text-[13px] font-normal text-[#9B9B9B] mt-1">
+          Pacote 15 e 19
+        </p>
+      </div>
 
-      {/* OPÇÃO 1: FORMULÁRIO COM CAMPOS UNDERLINE */}
-      {opcao === 'chave' && (
-        <form onSubmit={handleSubmitChave} className="space-y-6 animate-in fade-in-0 duration-200">
-          {/* Campo Nome */}
-          <div className="flex flex-col">
-            <label className="text-[11px] font-semibold uppercase tracking-[0.5px] text-[#718096] mb-1">
-              Nome Completo
-            </label>
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ESTADO 1 — INICIAL
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {estado === 'inicial' && (
+        <div className="mt-6 space-y-5 animate-in fade-in-0 duration-200">
+          <div>
             <input
               type="text"
-              required
               value={nome}
               onChange={(e) => {
                 setNome(e.target.value);
                 setErro(null);
               }}
-              placeholder="Ex: Carlos Eduardo"
+              placeholder="Seu nome completo"
               autoFocus
-              className="w-full bg-transparent border-0 border-b border-[#CBD5E0] focus:border-[#1A202C] py-2.5 text-base text-[#1A202C] placeholder:text-[#A0AEC0] outline-none rounded-none transition-colors"
+              className="w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2.5 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] focus:border-[#111111] focus:outline-none transition-colors"
             />
           </div>
 
-          {/* Campo Chave de Acesso / Código */}
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-[11px] font-semibold uppercase tracking-[0.5px] text-[#718096]">
-                Código de acesso
-              </label>
-              <span className="text-[10px] text-[#718096]">Ex: RDO001, 123456</span>
-            </div>
+          {erro && (
+            <p className="text-[12px] text-[#dc2626] font-medium text-center">
+              {erro}
+            </p>
+          )}
+
+          {/* Dois botões lado a lado */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setEstado('chave');
+                setErro(null);
+              }}
+              className="flex-1 h-[44px] bg-white border border-[#E5E5E3] rounded-[8px] inline-flex items-center justify-center gap-2 hover:bg-[#F9F9F8] transition-colors cursor-pointer select-none"
+            >
+              <Lock className="w-4 h-4 text-[#111111]" />
+              <span className="text-[13px] font-medium text-[#111111]">
+                Entrar com chave
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEstado('codigo_unico');
+                setErro(null);
+              }}
+              className="flex-1 h-[44px] bg-white border border-[#E5E5E3] rounded-[8px] inline-flex items-center justify-center gap-2 hover:bg-[#F9F9F8] transition-colors cursor-pointer select-none"
+            >
+              <Smartphone className="w-4 h-4 text-[#111111]" />
+              <span className="text-[13px] font-medium text-[#111111]">
+                Código único
+              </span>
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[#E5E5E3]" />
+            <span className="text-[12px] text-[#9B9B9B]">ou</span>
+            <div className="flex-1 h-px bg-[#E5E5E3]" />
+          </div>
+
+          {/* Botão Entrar preto full-width */}
+          <button
+            type="button"
+            onClick={() => {
+              setEstado('chave');
+              setErro(null);
+            }}
+            className="w-full h-[44px] bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[8px] transition-colors cursor-pointer flex items-center justify-center"
+          >
+            Entrar
+          </button>
+
+          {/* Rodapé Demo */}
+          <p className="text-[11px] text-[#C4C4C2] text-center mt-4">
+            Demo: use o código 123456 ou RDO001
+          </p>
+        </div>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ESTADO 2A — ENTRAR COM CHAVE
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {estado === 'chave' && (
+        <form
+          onSubmit={handleEntrarComChave}
+          className="mt-6 space-y-5 animate-in fade-in-0 duration-200"
+        >
+          {/* Mantém campo nome */}
+          <div>
             <input
               type="text"
-              required
+              value={nome}
+              onChange={(e) => {
+                setNome(e.target.value);
+                setErro(null);
+              }}
+              placeholder="Seu nome completo"
+              className="w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2.5 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] focus:border-[#111111] focus:outline-none transition-colors"
+            />
+          </div>
+
+          {/* Novo campo: Chave de Acesso */}
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block">
+                CHAVE DE ACESSO (EX: RDO001)
+              </label>
+              <span className="text-[10px] text-[#C4C4C2]">
+                Demo: 123456 ou RDO001
+              </span>
+            </div>
+            <input
+              type="password"
+              maxLength={10}
               value={chaveAcesso}
               onChange={(e) => {
                 setChaveAcesso(e.target.value);
                 setErro(null);
               }}
-              placeholder="RDO001, RDO002..."
-              className="w-full bg-transparent border-0 border-b border-[#CBD5E0] focus:border-[#1A202C] py-2.5 text-base text-[#1A202C] placeholder:text-[#A0AEC0] outline-none rounded-none transition-colors"
+              placeholder="••••••"
+              autoFocus
+              className="w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2 text-[15px] text-[#111111] tracking-[4px] placeholder:text-[#9B9B9B] focus:border-[#111111] focus:outline-none transition-colors"
             />
+            {erro && (
+              <p className="text-[12px] text-[#dc2626] font-medium mt-1.5">
+                {erro}
+              </p>
+            )}
+          </div>
+
+          {/* Botão Entrar */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-[44px] bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[8px] transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Entrando...</span>
+              </>
+            ) : (
+              'Entrar'
+            )}
+          </button>
+
+          {/* Link Voltar */}
+          <div className="text-center pt-1">
+            <button
+              type="button"
+              onClick={handleVoltar}
+              className="text-[12px] text-[#9B9B9B] hover:text-[#111111] transition-colors cursor-pointer"
+            >
+              ← Voltar
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ESTADO 2B — CÓDIGO ÚNICO
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {estado === 'codigo_unico' && (
+        <form
+          onSubmit={handleConfirmarCodigoUnico}
+          className="mt-6 space-y-5 animate-in fade-in-0 duration-200"
+        >
+          {nome.trim() ? (
+            <div className="text-center">
+              <p className="text-[13px] text-[#6B6B6B]">
+                Enviamos um código para
+              </p>
+              <p className="text-[13px] font-medium text-[#111111] mt-0.5 truncate">
+                {nome}
+              </p>
+            </div>
+          ) : (
+            <div>
+              <input
+                type="text"
+                value={nome}
+                onChange={(e) => {
+                  setNome(e.target.value);
+                  setErro(null);
+                }}
+                placeholder="Seu nome completo"
+                className="w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2.5 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] focus:border-[#111111] focus:outline-none transition-colors"
+              />
+            </div>
+          )}
+
+          {/* Campo Código Recebido */}
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block">
+                CÓDIGO RECEBIDO
+              </label>
+              <span className="text-[10px] text-[#C4C4C2]">
+                Demo: use o código 123456
+              </span>
+            </div>
+            <input
+              type="text"
+              maxLength={6}
+              value={codigoOtp}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                setCodigoOtp(val);
+                setErro(null);
+              }}
+              placeholder="000000"
+              autoFocus
+              className="w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2 text-[15px] text-[#111111] tracking-[6px] placeholder:text-[#C4C4C2] focus:border-[#111111] focus:outline-none transition-colors text-center"
+            />
+            {erro && (
+              <p className="text-[12px] text-[#dc2626] font-medium mt-1.5 text-center">
+                {erro}
+              </p>
+            )}
           </div>
 
           {/* Botão Confirmar */}
           <button
             type="submit"
-            disabled={loading || !nome.trim() || !chaveAcesso.trim()}
-            className="w-full h-11 rounded-lg bg-[#1C1C1C] text-white text-sm font-semibold hover:bg-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+            disabled={loading}
+            className="w-full h-[44px] bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[8px] transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {loading ? (
               <>
-                <Loader2 className="size-4 animate-spin" /> Entrando...
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Confirmando...</span>
               </>
             ) : (
-              'Confirmar →'
+              'Confirmar'
             )}
           </button>
+
+          {/* Link Voltar */}
+          <div className="text-center pt-1">
+            <button
+              type="button"
+              onClick={handleVoltar}
+              className="text-[12px] text-[#9B9B9B] hover:text-[#111111] transition-colors cursor-pointer"
+            >
+              ← Voltar
+            </button>
+          </div>
         </form>
       )}
-
-      {/* OPÇÃO 2: LINK MÁGICO */}
-      {opcao === 'magic' && (
-        <div className="space-y-6 animate-in fade-in-0 duration-200">
-          {magicEnviado ? (
-            <div className="p-4 rounded-lg bg-white border border-[#E2E8F0] shadow-2xs text-center space-y-3">
-              <div className="size-10 rounded-full bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center">
-                <CheckCircle2 className="size-6" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[#1A202C]">Link mágico enviado!</p>
-                <p className="text-xs text-[#718096] mt-1">
-                  Enviamos as instruções para <strong>{email}</strong>. Abra o link no seu dispositivo para acessar o RDO.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMagicEnviado(false)}
-                className="text-xs text-[#0061B7] hover:underline font-medium"
-              >
-                Tentar outro e-mail
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmitMagicLink} className="space-y-6">
-              {/* Campo Email Underline */}
-              <div className="flex flex-col">
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.5px] text-[#718096]">
-                    Seu e-mail corporativo
-                  </label>
-                  <span className="text-[10px] text-[#718096]">Demo: demo@metriclab.com.br</span>
-                </div>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setErro(null);
-                  }}
-                  placeholder="seu@email.com"
-                  autoFocus
-                  className="w-full bg-transparent border-0 border-b border-[#CBD5E0] focus:border-[#1A202C] py-2.5 text-base text-[#1A202C] placeholder:text-[#A0AEC0] outline-none rounded-none transition-colors"
-                />
-              </div>
-
-              {/* Botão Enviar Link Mágico */}
-              <button
-                type="submit"
-                disabled={loading || !email.trim()}
-                className="w-full h-11 rounded-lg bg-[#1C1C1C] text-white text-sm font-semibold hover:bg-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" /> Enviando link...
-                  </>
-                ) : (
-                  'Enviar link mágico →'
-                )}
-              </button>
-            </form>
-          )}
-        </div>
-      )}
-
-      {/* Texto Abaixo */}
-      <p className="text-[11px] text-[#718096] text-center mt-5 select-none">
-        Acesso via WhatsApp disponível em campo
-      </p>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center px-4 py-12 select-none">
-      {/* Logo m. exato do gestão */}
-      <div className="mb-8 flex flex-col items-center gap-3">
-        <div className="text-4xl font-black tracking-tighter text-[#1A202C] select-none">
-          m<span style={{ color: '#FFC028' }}>.</span>
-        </div>
-        <div className="text-center">
-          <h1 className="text-[28px] sm:text-[32px] font-bold text-[#1A202C] tracking-tight leading-tight">
-            Relatório Diário de Obra
-          </h1>
-          <p className="text-[14px] text-[#718096] font-normal mt-1.5">
-            Pacote 15 e 19
-          </p>
-        </div>
-      </div>
-
-      {/* Card / Formulário */}
+    <div className="min-h-screen bg-[#F0F0F0] flex items-center justify-center p-4">
       <Suspense
         fallback={
-          <div className="h-64 w-full max-w-[360px] rounded-2xl bg-white/60 p-8 shadow-2xs animate-pulse" />
+          <div className="w-full max-w-[380px] h-[340px] bg-white rounded-[12px] border border-[#E5E5E3] p-8 animate-pulse" />
         }
       >
         <LoginContent />
       </Suspense>
-
-      {/* Rodapé padrão gestão */}
-      <div className="mt-10 flex flex-col items-center gap-2 text-xs text-[#718096]">
-        <div className="flex items-center gap-2">
-          <a
-            href="https://metriclab.com.br"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold hover:underline"
-            style={{ color: '#FFC028' }}
-          >
-            MetricLab
-          </a>
-          <span>·</span>
-          <span>Pacote 15 e 19</span>
-        </div>
-      </div>
-    </main>
+    </div>
   );
 }

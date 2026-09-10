@@ -92,4 +92,20 @@ Executadas com sucesso via PostgreSQL direto:
 - **Confirmação (`/rdo/[id]/confirmacao`)**: Fundo `--canvas`, sem header, eyebrow ENVIADO, subtítulo 20px 400, lista flat com divisores hairline, botão preto 48px.
 - **Build**: Next.js 14 production build testado e validado com sucesso (código 0).
 
+---
+
+## 10 de Setembro de 2026 — Fluxo de Login Unificado com Gestão (Chave + Código Único)
+- **Design System & Layout**:
+  - Fundo `#F0F0F0`, card centralizado `bg-white`, border 1px `#E5E5E3`, radius 12px, padding 32px, max-width 380px.
+  - Logo `m.` com ponto `#F5A623`, título "Relatório Diário de Obra" e subtítulo "Pacote 15 e 19".
+- **Fluxo com 3 Estados**:
+  - **Estado 1 (Inicial)**: Campo underline "Nome do Usuário", dois botões lado a lado ("Entrar com chave" e "Código único"), divisor "ou" e botão preto full-width "Entrar".
+  - **Estado 2A (Chave)**: Campo com chave de acesso (password, hint Demo: 123456 ou RDO001), validação com bypass demo 123456/RDO e consulta na tabela `demo_rdo_usuarios`. Shake animation caso inválido.
+  - **Estado 2B (Código Único)**: Mensagem "Enviamos um código para...", campo de 6 dígitos com espaçamento monospace, bypass 123456 para demo e botão "Confirmar".
+- **Splash (`/`)**:
+  - Fundo `#F0F0F0`, display "Pacote 15 e 19", eyebrow "PROPOSTA", subtítulo "Relatório Diário de Obra" e botão "Entrar" full-width.
+- **Build & Verificação**:
+  - `npm run build` executado com 0 erros TypeScript.
+
+
 
