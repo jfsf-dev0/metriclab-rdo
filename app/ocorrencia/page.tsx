@@ -1,47 +1,40 @@
+'use strict';
 'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { HeaderMobile } from '@/components/layout/HeaderMobile';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
 import { supabase } from '@/lib/supabase';
 import { RDOSession } from '@/types/rdo';
-import { Camera, X, Loader2 } from 'lucide-react';
+import { Camera, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 
 type TipoOcorrencia =
-  | 'acidente'
-  | 'quase_acidente'
-  | 'ambiental'
-  | 'patrimonial'
-  | 'operacional'
-  | 'outro';
+  | 'Acidente'
+  | 'Quase Acidente'
+  | 'Ambiental'
+  | 'Patrimonial'
+  | 'Operacional'
+  | 'Outro';
 
-type Gravidade = 'baixa' | 'media' | 'alta' | 'critica';
+type Gravidade = 'Baixa' | 'Média' | 'Alta' | 'Crítica';
 
-const TIPOS: { id: TipoOcorrencia; label: string }[] = [
-  { id: 'acidente', label: 'Acidente' },
-  { id: 'quase_acidente', label: 'Quase Acidente' },
-  { id: 'ambiental', label: 'Ambiental' },
-  { id: 'patrimonial', label: 'Patrimonial' },
-  { id: 'operacional', label: 'Operacional' },
-  { id: 'outro', label: 'Outro' },
+const TIPOS: TipoOcorrencia[] = [
+  'Acidente',
+  'Quase Acidente',
+  'Ambiental',
+  'Patrimonial',
+  'Operacional',
+  'Outro',
 ];
 
-const GRAVIDADES: { id: Gravidade; label: string }[] = [
-  { id: 'baixa', label: 'Baixa' },
-  { id: 'media', label: 'Média' },
-  { id: 'alta', label: 'Alta' },
-  { id: 'critica', label: 'Crítica' },
-];
+const GRAVIDADES: Gravidade[] = ['Baixa', 'Média', 'Alta', 'Crítica'];
 
 export default function OcorrenciaPage() {
   const router = useRouter();
-  const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [session, setSession] = useState<RDOSession | null>(null);
-  const [tipo, setTipo] = useState<TipoOcorrencia>('operacional');
-  const [gravidade, setGravidade] = useState<Gravidade>('media');
+  const [tipo, setTipo] = useState<TipoOcorrencia>('Operacional');
+  const [gravidade, setGravidade] = useState<Gravidade>('Média');
   const [descricao, setDescricao] = useState('');
   const [fotos, setFotos] = useState<string[]>([]);
   const [uploadingFoto, setUploadingFoto] = useState(false);
@@ -51,6 +44,7 @@ export default function OcorrenciaPage() {
   const [gpsLoading, setGpsLoading] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem('ml_rdo_session');
@@ -68,20 +62,20 @@ export default function OcorrenciaPage() {
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setGeolat(pos.coords.latitude);
-          setGeolng(pos.coords.longitude);
+          setGeolat(Number(pos.coords.latitude.toFixed(4)));
+          setGeolng(Number(pos.coords.longitude.toFixed(4)));
           setGpsLoading(false);
         },
         () => {
-          setGeolat(-23.55052);
-          setGeolng(-46.633308);
+          setGeolat(-23.5505);
+          setGeolng(-46.6333);
           setGpsLoading(false);
         },
         { timeout: 8000, enableHighAccuracy: true }
       );
     } else {
-      setGeolat(-23.55052);
-      setGeolng(-46.633308);
+      setGeolat(-23.5505);
+      setGeolng(-46.6333);
       setGpsLoading(false);
     }
   };
@@ -99,22 +93,22 @@ export default function OcorrenciaPage() {
 
       const { error: uploadError } = await supabase.storage
         .from('demo-rdo-fotos')
-        .upload(fileName, file, { contentType: file.type || 'image/jpeg' });
+        .upload(fileName, file, { contentType: file.type });
 
       if (uploadError) {
-        showToast('Erro ao carregar foto.', 'error');
-        setUploadingFoto(false);
-        return;
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          if (re.target?.result) {
+            setFotos((prev) => [...prev, re.target!.result as string]);
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const { data } = supabase.storage
+          .from('demo-rdo-fotos')
+          .getPublicUrl(fileName);
+        setFotos((prev) => [...prev, data.publicUrl]);
       }
-
-      const { data: publicData } = supabase.storage
-        .from('demo-rdo-fotos')
-        .getPublicUrl(fileName);
-
-      setFotos((prev) => [...prev, publicData.publicUrl]);
-      showToast('Foto anexada com sucesso!', 'success');
-    } catch {
-      showToast('Erro inesperado no upload da foto.', 'error');
     } finally {
       setUploadingFoto(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -127,53 +121,48 @@ export default function OcorrenciaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session) return;
-
-    if (!descricao.trim() || descricao.trim().length < 10) {
-      showToast('Descreva a ocorrência com pelo menos 10 caracteres.', 'warning');
+    if (!descricao.trim()) {
+      setErro('Descreva o que aconteceu na ocorrência.');
       return;
     }
 
+    if (!session) return;
     setSubmitting(true);
+    setErro(null);
+
+    const gravidadeApi =
+      gravidade === 'Crítica'
+        ? 'critica'
+        : gravidade === 'Média'
+        ? 'media'
+        : (gravidade.toLowerCase() as any);
+
+    const tipoApi = tipo.toLowerCase().replace(/ /g, '_');
 
     try {
-      const hoje = new Date().toISOString().split('T')[0];
-
-      const { data: ocorrenciaData, error: dbError } = await supabase
+      const { error: insertError } = await supabase
         .from('demo_rdo_ocorrencias')
         .insert({
           usuario_id: session.usuario_id,
-          trecho_id: session.trecho_id,
-          data: hoje,
-          tipo,
+          trecho_id: session.trecho_id || 'd301f2ac-0a56-43f1-8f24-5d5d67683935',
+          data: new Date().toISOString().split('T')[0],
+          tipo: tipoApi,
           descricao: descricao.trim(),
-          gravidade,
+          gravidade: gravidadeApi,
           fotos,
-          geolat: geolat ? Number(geolat.toFixed(6)) : null,
-          geolng: geolng ? Number(geolng.toFixed(6)) : null,
+          geolat,
+          geolng,
           status: 'aberta',
-        })
-        .select()
-        .single();
+        });
 
-      if (dbError) {
-        showToast('Erro ao salvar no banco: ' + dbError.message, 'error');
-        setSubmitting(false);
-        return;
-      }
+      if (insertError) throw insertError;
 
-      const ocorrenciaId = ocorrenciaData?.id || '';
-
-      const webhookUrl =
-        process.env.N8N_RDO_OCORRENCIA ||
-        'https://n8n.metriclab.com.br/webhook/rdo-ocorrencia';
-
+      // Webhook
       try {
-        await fetch(webhookUrl, {
+        fetch('https://n8n.metriclab.com.br/webhook/rdo-ocorrencia', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            ocorrencia_id: ocorrenciaId,
             usuario_nome: session.nome,
             trecho_nome: session.trecho_nome,
             tipo,
@@ -182,185 +171,206 @@ export default function OcorrenciaPage() {
             fotos,
             geolat,
             geolng,
-            timestamp: new Date().toISOString(),
           }),
         });
-      } catch (e) {
-        console.warn('Webhook n8n falhou silenciosamente:', e);
-      }
+      } catch (_) {}
 
-      showToast('Ocorrência registrada com sucesso!', 'success');
       router.push('/menu');
-    } catch {
-      showToast('Erro ao processar solicitação.', 'error');
+    } catch (err: any) {
+      setErro(err.message || 'Erro ao registrar ocorrência.');
       setSubmitting(false);
     }
   };
 
   return (
     <main className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col justify-between">
-      {/* Header: "← Voltar" + "Nova Ocorrência" */}
-      <HeaderMobile
-        title="Nova Ocorrência"
-        showBack={true}
-        onBack={() => router.push('/menu')}
-      />
+      {/* Header: "← Voltar" | "Nova Ocorrência" */}
+      <header className="h-[52px] bg-[#F7F7F5] border-b border-[#E5E5E3] px-6 flex items-center justify-between">
+        <button
+          onClick={() => router.push('/menu')}
+          className="text-[14px] text-[#111111] hover:underline"
+        >
+          ← Voltar
+        </button>
+        <span className="text-[16px] font-normal text-[#111111]">
+          Nova Ocorrência
+        </span>
+        <div className="w-12" />
+      </header>
 
-      <div className="flex-1 max-w-md w-full mx-auto px-5 py-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* TIPO — eyebrow + grid 2x3 sem emoji */}
-          <div>
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
-              TIPO
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              {TIPOS.map((item) => {
-                const isSelected = tipo === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setTipo(item.id)}
-                    className={`border rounded-[4px] px-4 py-3 text-[14px] text-left transition-colors cursor-pointer ${
-                      isSelected
-                        ? 'border-[#111111] bg-[#EFEFED] text-[#111111] font-medium'
-                        : 'border-[#E5E5E3] bg-transparent text-[#111111] hover:bg-[#EFEFED]'
+      {/* Padding 24px */}
+      <div className="flex-1 max-w-md w-full mx-auto p-6">
+        {erro && (
+          <div className="mb-6 text-[13px] text-[#111111] border-b border-[#111111] pb-2">
+            {erro}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          {/* TIPO DE OCORRÊNCIA — eyebrow */}
+          <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
+            TIPO DE OCORRÊNCIA
+          </span>
+
+          <div className="divide-y divide-[#E5E5E3] border-t border-[#E5E5E3]">
+            {TIPOS.map((t) => {
+              const isSelected = tipo === t;
+              return (
+                <div
+                  key={t}
+                  onClick={() => setTipo(t)}
+                  className="py-3.5 flex items-center justify-between cursor-pointer select-none"
+                >
+                  <span
+                    className={`text-[20px] ${
+                      isSelected ? 'font-medium text-[#111111]' : 'font-normal text-[#111111]'
                     }`}
                   >
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
+                    {t}
+                  </span>
+                  {isSelected ? (
+                    <ChevronDown className="w-5 h-5 text-[#111111]" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-[#C4C4C2]" />
+                  )}
+                </div>
+              );
+            })}
           </div>
 
-          {/* GRAVIDADE — eyebrow + 4 botões em linha sem cores */}
-          <div>
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
-              GRAVIDADE
-            </span>
-            <div className="grid grid-cols-4 gap-2">
-              {GRAVIDADES.map((item) => {
-                const isSelected = gravidade === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setGravidade(item.id)}
-                    className={`border rounded-[4px] py-2 text-[13px] font-medium text-center transition-colors cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#111111] border-[#111111] text-white'
-                        : 'bg-transparent border-[#E5E5E3] text-[#111111] hover:bg-[#EFEFED]'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="w-full border-b border-[#E5E5E3] my-8" />
+
+          {/* GRAVIDADE — eyebrow */}
+          <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-3">
+            GRAVIDADE
+          </span>
+
+          <div className="grid grid-cols-4 gap-2">
+            {GRAVIDADES.map((g) => {
+              const active = gravidade === g;
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGravidade(g)}
+                  className={`py-2 text-[14px] font-normal rounded-[4px] border transition-colors ${
+                    active
+                      ? 'bg-[#111111] text-white border-[#111111]'
+                      : 'border-[#E5E5E3] text-[#111111]'
+                  }`}
+                >
+                  {g}
+                </button>
+              );
+            })}
           </div>
 
-          {/* DESCRIÇÃO — eyebrow + textarea underline 5 linhas */}
-          <div>
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
-              DESCRIÇÃO
-            </span>
-            <textarea
-              rows={5}
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Descreva detalhadamente o ocorrido..."
-              className="w-full bg-transparent border-t-0 border-l-0 border-r-0 border-b border-[#E5E5E3] rounded-none py-2 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] focus:outline-none focus:border-b-[#111111] resize-none"
-              required
-            />
-          </div>
+          <div className="w-full border-b border-[#E5E5E3] my-8" />
 
-          {/* FOTOS — eyebrow + área câmera dashed border */}
-          <div>
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
-              FOTOS
-            </span>
+          {/* DESCRIÇÃO — eyebrow */}
+          <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
+            DESCRIÇÃO
+          </span>
+          <textarea
+            rows={5}
+            required
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+            placeholder="Descreva o que aconteceu..."
+            className="w-full bg-transparent border-0 border-b border-[#E5E5E3] focus:border-[#111111] py-3 text-[16px] text-[#111111] placeholder:text-[#9B9B9B] outline-none rounded-none resize-none transition-colors"
+          />
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+          <div className="w-full border-b border-[#E5E5E3] my-8" />
 
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border border-dashed border-[#E5E5E3] rounded-[8px] p-6 bg-[#F7F7F5] flex flex-col items-center justify-center cursor-pointer hover:bg-[#EFEFED] transition-colors"
-            >
-              {uploadingFoto ? (
-                <Loader2 className="w-5 h-5 text-[#9B9B9B] animate-spin mb-2" />
-              ) : (
-                <Camera className="w-5 h-5 text-[#9B9B9B] mb-2" />
-              )}
-              <span className="text-[13px] text-[#9B9B9B]">
-                {uploadingFoto ? 'Carregando foto...' : 'Adicionar foto de evidência'}
-              </span>
-            </div>
+          {/* FOTOS — eyebrow */}
+          <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-3">
+            FOTOS
+          </span>
 
-            {fotos.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mt-3">
-                {fotos.map((url, i) => (
-                  <div key={i} className="relative aspect-square rounded-[4px] overflow-hidden border border-[#E5E5E3] bg-[#EFEFED]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt={`Evidência ${i + 1}`} className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFoto(i)}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-[#9B9B9B] hover:text-white flex items-center justify-center"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="border border-dashed border-[#E5E5E3] rounded-none py-10 px-6 bg-[#F7F7F5] flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-3"
+          >
+            {uploadingFoto ? (
+              <Loader2 className="w-5 h-5 text-[#9B9B9B] animate-spin mb-2" />
+            ) : (
+              <Camera className="w-5 h-5 text-[#9B9B9B] mb-2" />
             )}
+            <span className="text-[14px] font-normal text-[#6B6B6B]">
+              {uploadingFoto ? 'Enviando...' : 'Adicionar foto'}
+            </span>
           </div>
 
-          {/* LOCALIZAÇÃO — eyebrow + status em texto simples */}
-          <div>
+          {fotos.length > 0 && (
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {fotos.map((f, idx) => (
+                <div
+                  key={idx}
+                  className="relative aspect-video bg-[#EFEFED] rounded-[4px] overflow-hidden border border-[#E5E5E3]"
+                >
+                  <img
+                    src={f}
+                    alt={`Foto ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFoto(idx)}
+                    className="absolute top-1 right-1 bg-black/60 text-[#9B9B9B] hover:text-white text-[12px] w-6 h-6 rounded-full flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="w-full border-b border-[#E5E5E3] my-8" />
+
+          {/* LOCALIZAÇÃO — eyebrow */}
+          <div className="mb-10">
             <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
               LOCALIZAÇÃO
             </span>
-            <div className="flex items-center justify-between py-2 border-b border-[#E5E5E3]">
-              <span className="text-[13px] text-[#6B6B6B]">
-                {gpsLoading
-                  ? 'Obtendo coordenadas...'
-                  : geolat
-                  ? `${geolat.toFixed(5)}, ${geolng?.toFixed(5)}`
-                  : 'GPS pendente'}
-              </span>
+            {gpsLoading ? (
+              <p className="text-[13px] font-normal text-[#9B9B9B]">
+                Capturando GPS...
+              </p>
+            ) : geolat && geolng ? (
+              <p className="text-[13px] font-normal text-[#9B9B9B]">
+                Lat: {geolat} · Lng: {geolng}
+              </p>
+            ) : (
               <button
                 type="button"
                 onClick={capturarGPS}
-                className="text-[13px] text-[#111111] underline cursor-pointer bg-transparent border-none p-0"
+                className="text-[14px] text-[#111111] hover:underline"
               >
-                {geolat ? 'Atualizar' : 'Capturar'}
+                Capturar localização
               </button>
-            </div>
+            )}
           </div>
 
-          <div className="pt-2">
-            <Button
-              type="submit"
-              disabled={submitting}
-              loading={submitting}
-              className="w-full bg-[#111111] text-white text-[14px] font-medium rounded-[6px] h-[48px]"
-            >
-              Registrar Ocorrência
-            </Button>
-          </div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full h-12 bg-[#111111] hover:bg-black disabled:opacity-40 text-white text-[14px] font-medium rounded-[6px] transition-colors flex items-center justify-center cursor-pointer"
+          >
+            {submitting ? 'Registrando...' : 'Registrar Ocorrência'}
+          </button>
         </form>
       </div>
 
-      <footer className="w-full text-center py-4 text-[11px] text-[#9B9B9B] border-t border-[#E5E5E3] bg-[#F7F7F5] pb-safe">
-        MetricLab · Consórcio Pacote 15 e 19
+      <footer className="w-full text-center py-4 text-[11px] text-[#9B9B9B] border-t border-[#E5E5E3]">
+        MetricLab · Pacote 15 e 19
       </footer>
     </main>
   );

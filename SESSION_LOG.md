@@ -82,11 +82,14 @@ Executadas com sucesso via PostgreSQL direto:
 
 ---
 
-## 09 de Setembro de 2026 — Refatoração Design System 2.0 (Runway + Linear)
+## 09 de Setembro de 2026 — Refatoração Design System 2.0 (Runway + Linear — Accordion Lists)
 - **Implementação dos tokens de cor**: `--canvas: #F7F7F5`, `--surface: #FFFFFF`, `--hairline: #E5E5E3`, `--hairline-soft: #EFEFED`, `--ink: #111111`, `--ink-soft: #3A3A3A`, `--graphite: #6B6B6B`, `--stone: #9B9B9B`, `--ash: #C4C4C2`, `--accent: #F5A623`.
-- **Substituição dos botões**: `#111111` sólido, texto branco, 48px altura mínima, border radius 6px (`rounded-md`), sem ícones em botões primários. Botões secundários transparentes com texto `text-graphite` e seta `← Voltar`.
-- **Inputs estilo Runway**: Fundo transparente, apenas linha inferior `border-b border-hairline`, foco escuro `#111111`, sem cantos arredondados, label uppercase 11px stone.
-- **Remoção de ruído visual**: Remoção total de emojis em cards e botões, eliminação de badges coloridos (verde, vermelho, azul, âmbar), remoção de sombras drop shadow (`shadow-none`), cartões em layout plano com divisores sutis de 1px hairline.
-- **Header padronizado**: Logo oficial `m<span class="text-accent">.</span> MetricLab` com tipografia Inter sem serifa, sem badges coloridos de ambiente.
-- **Build validado**: Next.js 14 production build validado com 0 erros de TypeScript/linting.
+- **Layout Splash (`/`)**: Proporção 20%/50%/30%, logo `m.` 36px, Display `Pacote 15 e 19` 72px weight 500, botão preto 48px.
+- **Login (`/login`)**: Tipografia precisa, inputs underline, remoção de botões rápidos demo, foco estritamente corporativo.
+- **Menu (`/menu`)**: Layout flat em `--canvas`, accordion para "Registrar Ocorrência" e "Relatório Diário de Obra" com status dinâmico.
+- **Ocorrência (`/ocorrencia`)**: Accordion para os 6 tipos de ocorrência (1 aberto por vez), 4 botões planos de gravidade, textarea underline, GPS texto puro.
+- **RDO Novo (`/rdo/novo`)**: Fluxo em 5 passos com barra de progresso fina de 2px; crachá QR com câmera e membros em accordion; máquinas em accordion com 4 estados inline e observação underline; assinatura em canvas touch com GPS texto puro e resumo flat.
+- **Confirmação (`/rdo/[id]/confirmacao`)**: Fundo `--canvas`, sem header, eyebrow ENVIADO, subtítulo 20px 400, lista flat com divisores hairline, botão preto 48px.
+- **Build**: Next.js 14 production build testado e validado com sucesso (código 0).
+
 
