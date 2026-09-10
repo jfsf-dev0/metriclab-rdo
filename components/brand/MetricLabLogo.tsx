@@ -12,44 +12,61 @@ export function MetricLabLogo({
   size = 'md',
   showText = true,
 }: MetricLabLogoProps) {
-  const markSizes = {
-    sm: 'w-7 h-7 text-xs rounded-lg',
-    md: 'w-8 h-8 text-sm rounded-xl',
-    lg: 'w-12 h-12 text-xl rounded-2xl',
-    xl: 'w-16 h-16 text-2xl rounded-2xl',
-  };
-
-  const textSizes = {
-    sm: 'text-xs',
-    md: 'text-sm',
-    lg: 'text-lg',
-    xl: 'text-xl',
-  };
+  if (size === 'lg' || size === 'xl') {
+    return (
+      <div className={cn('inline-flex flex-col items-center justify-center select-none', className)}>
+        <span
+          style={{
+            fontSize: '32px',
+            fontWeight: 700,
+            color: '#111111',
+            letterSpacing: '-0.5px',
+            lineHeight: 1,
+          }}
+        >
+          m<span style={{ color: '#F5A623' }}>.</span>
+        </span>
+        {showText && (
+          <span
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: '#111111',
+              letterSpacing: '0.2px',
+              marginTop: '4px',
+            }}
+          >
+            MetricLab
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className={cn('inline-flex items-center gap-2.5 select-none', className)}>
-      <div
-        className={cn(
-          'bg-gradient-to-br from-blue-600 to-blue-700 text-white font-black flex items-center justify-center shadow-md shadow-blue-500/20 border border-blue-400/30 transition-transform',
-          markSizes[size]
-        )}
+    <div className={cn('inline-flex items-center gap-1.5 select-none', className)}>
+      <span
+        style={{
+          fontSize: '18px',
+          fontWeight: 700,
+          color: '#111111',
+          letterSpacing: '-0.5px',
+          lineHeight: 1,
+        }}
       >
-        <span className="leading-none flex items-baseline">
-          m<span className="text-[#FFC028] font-black">.</span>
-        </span>
-      </div>
-
+        m<span style={{ color: '#F5A623' }}>.</span>
+      </span>
       {showText && (
-        <div className="flex flex-col text-left">
-          <span
-            className={cn(
-              'font-extrabold tracking-wider text-gray-900 uppercase leading-none font-sans',
-              textSizes[size]
-            )}
-          >
-            Metric<span className="text-blue-600">Lab</span>
-          </span>
-        </div>
+        <span
+          style={{
+            fontSize: '13px',
+            fontWeight: 500,
+            color: '#111111',
+            letterSpacing: '0.2px',
+          }}
+        >
+          MetricLab
+        </span>
       )}
     </div>
   );

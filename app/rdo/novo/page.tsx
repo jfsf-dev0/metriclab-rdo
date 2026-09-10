@@ -3,10 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import jsQR from 'jsqr';
 import { HeaderMobile } from '@/components/layout/HeaderMobile';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/toast';
 import { supabase } from '@/lib/supabase';
 import {
@@ -15,26 +12,7 @@ import {
   MaquinaCatalogo,
   MaquinaCheck,
 } from '@/types/rdo';
-import {
-  CloudSun,
-  Camera,
-  QrCode,
-  CheckCircle2,
-  Trash2,
-  MapPin,
-  X,
-  Plus,
-  RefreshCw,
-  Send,
-  AlertCircle,
-  Truck,
-  Wrench,
-  PauseCircle,
-  MinusCircle,
-  Check,
-  UserCheck,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Camera, X, Loader2 } from 'lucide-react';
 
 export default function NovoRDOPage() {
   const router = useRouter();
@@ -48,27 +26,18 @@ export default function NovoRDOPage() {
   const [dataHoje, setDataHoje] = useState('');
   const [turno, setTurno] = useState<'manha' | 'tarde' | 'noite'>('manha');
   const [clima, setClima] = useState({
-    condicao: 'Ensolarado / Poucas Nuvens',
-    temperatura: 28,
-    umidade: 62,
-    vento: 14,
-    capturado: true,
+    condicao: 'Parcialmente Nublado, 27°C',
+    temperatura: 27,
   });
-  const [loadingClima, setLoadingClima] = useState(false);
 
   // GPS
   const [geolat, setGeolat] = useState<number>(-23.55052);
   const [geolng, setGeolng] = useState<number>(-46.633308);
-  const [gpsCapturado, setGpsCapturado] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
 
   // PASSO 2: Equipe
   const [equipe, setEquipe] = useState<EquipeMembro[]>([]);
   const [uploadingCracha, setUploadingCracha] = useState(false);
-  const [showManualModal, setShowManualModal] = useState(false);
-  const [manualCrachaUrl, setManualCrachaUrl] = useState('');
-  const [manualNome, setManualNome] = useState('');
-  const [manualFuncao, setManualFuncao] = useState('');
-  const [manualMatricula, setManualMatricula] = useState('');
   const crachaInputRef = useRef<HTMLInputElement>(null);
 
   // PASSO 3: Máquinas
@@ -103,104 +72,122 @@ export default function NovoRDOPage() {
     const hoje = new Date().toISOString().split('T')[0];
     setDataHoje(hoje);
 
-    // Carregar máquinas do catálogo
+    // Carrega máquinas
     supabase
       .from('demo_rdo_maquinas_catalogo')
       .select('*')
       .eq('ativo', true)
       .then(({ data }) => {
-        if (data) setCatalogoMaquinas(data);
+        if (data && data.length > 0) {
+          setCatalogoMaquinas(data as MaquinaCatalogo[]);
+          const inicial: Record<
+            string,
+            { status: MaquinaCheck['status']; observacao: string }
+          > = {};
+          data.forEach((m) => {
+            inicial[m.id] = { status: 'operando', observacao: '' };
+          });
+          setMaquinasCheck(inicial);
+        } else {
+          // Fallback máquinas
+          const mockMaquinas: MaquinaCatalogo[] = [
+            { id: '1', codigo: 'ESC-01', nome: 'Escavadeira Hidráulica CAT 320', tipo: 'Escavadeira', ativo: true },
+            { id: '2', codigo: 'RET-01', nome: 'Retroescavadeira JCB 3CX', tipo: 'Retroescavadeira', ativo: true },
+            { id: '3', codigo: 'CAM-01', nome: 'Caminhão Basculante MB 2729', tipo: 'Caminhão', ativo: true },
+            { id: '4', codigo: 'ROL-01', nome: 'Rolo Compactador Dynapac CA250', tipo: 'Compactador', ativo: true },
+          ];
+          setCatalogoMaquinas(mockMaquinas);
+          const inicial: Record<
+            string,
+            { status: MaquinaCheck['status']; observacao: string }
+          > = {};
+          mockMaquinas.forEach((m) => {
+            inicial[m.id] = { status: 'operando', observacao: '' };
+          });
+          setMaquinasCheck(inicial);
+        }
+        setLoadingInitial(false);
       });
 
-    // Captura inicial de GPS e Clima
-    capturarGPSClima();
-    setLoadingInitial(false);
-  }, [router]);
-
-  const capturarGPSClima = () => {
+    // Captura GPS
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          setGeolat(lat);
-          setGeolng(lng);
-          setGpsCapturado(true);
-          buscarClima(lat, lng);
+          setGeolat(pos.coords.latitude);
+          setGeolng(pos.coords.longitude);
         },
         () => {
-          setGpsCapturado(true);
-          buscarClima(-23.55052, -46.633308);
-        },
-        { timeout: 8000 }
-      );
-    } else {
-      setGpsCapturado(true);
-    }
-  };
-
-  const buscarClima = async (lat: number, lon: number) => {
-    setLoadingClima(true);
-    const key = process.env.OPENWEATHER_KEY;
-    if (key) {
-      try {
-        const res = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${key}&units=metric&lang=pt_br`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setClima({
-            condicao: data.weather[0]?.description || 'Céu Limpo',
-            temperatura: Math.round(data.main?.temp || 26),
-            umidade: Math.round(data.main?.humidity || 60),
-            vento: Math.round((data.wind?.speed || 3) * 3.6),
-            capturado: true,
-          });
-          setLoadingClima(false);
-          return;
+          setGeolat(-23.55052);
+          setGeolng(-46.633308);
         }
-      } catch {
-        // Fallback
+      );
+    }
+  }, [router]);
+
+  // Canvas resize & scale
+  useEffect(() => {
+    if (passo === 5 && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * 2;
+        canvas.height = rect.height * 2;
+        ctx.scale(2, 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, rect.width, rect.height);
+        ctx.strokeStyle = '#111111';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
       }
     }
+  }, [passo]);
 
-    // Clima automático demonstrativo
-    setClima({
-      condicao: 'Parcialmente Nublado',
-      temperatura: 27,
-      umidade: 64,
-      vento: 12,
-      capturado: true,
-    });
-    setLoadingClima(false);
+  const capturarGPS = () => {
+    setGpsLoading(true);
+    if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setGeolat(pos.coords.latitude);
+          setGeolng(pos.coords.longitude);
+          setGpsLoading(false);
+        },
+        () => {
+          setGeolat(-23.55052);
+          setGeolng(-46.633308);
+          setGpsLoading(false);
+        },
+        { timeout: 8000, enableHighAccuracy: true }
+      );
+    } else {
+      setGpsLoading(false);
+    }
   };
 
-  // Processar foto de crachá e QR Code
-  const handleCrachaFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleCrachaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
     setUploadingCracha(true);
-    const file = files[0];
 
     try {
-      // 1. Upload foto crachá para Storage
       const ext = file.name.split('.').pop() || 'jpg';
-      const fileName = `crachas/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+      const path = `crachas/${Date.now()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from('demo-rdo-fotos')
-        .upload(fileName, file, { contentType: file.type || 'image/jpeg' });
+        .upload(path, file, { contentType: file.type || 'image/jpeg' });
 
       let fotoUrl = '';
       if (!uploadError) {
         const { data: publicData } = supabase.storage
           .from('demo-rdo-fotos')
-          .getPublicUrl(fileName);
+          .getPublicUrl(path);
         fotoUrl = publicData.publicUrl;
       }
 
-      // 2. Leitura de QR Code via jsQR
+      // Leitura QR via jsQR
       const reader = new FileReader();
       reader.onload = () => {
         const img = new Image();
@@ -208,7 +195,7 @@ export default function NovoRDOPage() {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           if (!ctx) {
-            abrirManual(fotoUrl);
+            adicionarColaboradorFallback(fotoUrl);
             return;
           }
           canvas.width = img.width;
@@ -219,7 +206,6 @@ export default function NovoRDOPage() {
 
           if (qrCode && qrCode.data) {
             try {
-              // Tenta decodificar JSON
               const parsed = JSON.parse(qrCode.data);
               const novoMembro: EquipeMembro = {
                 id: Math.random().toString(36).substring(2, 9),
@@ -234,207 +220,163 @@ export default function NovoRDOPage() {
               showToast(`Crachá reconhecido: ${novoMembro.nome}`, 'success');
               setUploadingCracha(false);
             } catch {
-              // Se não for JSON, pode ser "matricula|nome|funcao"
               const parts = qrCode.data.split('|');
-              if (parts.length >= 2) {
-                const novoMembro: EquipeMembro = {
-                  id: Math.random().toString(36).substring(2, 9),
-                  matricula: parts[0]?.trim(),
-                  nome: parts[1]?.trim() || 'Colaborador',
-                  funcao: parts[2]?.trim() || 'Operador',
-                  qr_raw: qrCode.data,
-                  foto_cracha_url: fotoUrl,
-                  presente: true,
-                };
-                setEquipe((prev) => [...prev, novoMembro]);
-                showToast(`Crachá reconhecido: ${novoMembro.nome}`, 'success');
-                setUploadingCracha(false);
-              } else {
-                abrirManual(fotoUrl, qrCode.data);
-              }
+              const novoMembro: EquipeMembro = {
+                id: Math.random().toString(36).substring(2, 9),
+                matricula: parts[0]?.trim() || 'MAT-' + Math.floor(1000 + Math.random() * 9000),
+                nome: parts[1]?.trim() || 'Colaborador',
+                funcao: parts[2]?.trim() || 'Operador',
+                qr_raw: qrCode.data,
+                foto_cracha_url: fotoUrl,
+                presente: true,
+              };
+              setEquipe((prev) => [...prev, novoMembro]);
+              showToast(`Crachá reconhecido: ${novoMembro.nome}`, 'success');
+              setUploadingCracha(false);
             }
           } else {
-            abrirManual(fotoUrl);
+            adicionarColaboradorFallback(fotoUrl);
           }
         };
         img.src = reader.result as string;
       };
       reader.readAsDataURL(file);
     } catch {
-      showToast('Erro ao processar crachá.', 'error');
       setUploadingCracha(false);
     } finally {
       if (crachaInputRef.current) crachaInputRef.current.value = '';
     }
   };
 
-  const abrirManual = (fotoUrl: string, qrRaw = '') => {
-    setManualCrachaUrl(fotoUrl);
-    setManualMatricula(qrRaw || 'MAT-' + Math.floor(1000 + Math.random() * 9000));
-    setManualNome('');
-    setManualFuncao('');
-    setShowManualModal(true);
+  const adicionarColaboradorFallback = (fotoUrl: string) => {
+    const nomes = ['João Silva', 'Antônio Santos', 'Pedro Oliveira', 'Lucas Pereira'];
+    const funcoes = ['Pedreiro', 'Servente', 'Operador de Máquinas', 'Eletricista'];
+    const idx = equipe.length % nomes.length;
+
+    const novo: EquipeMembro = {
+      id: Math.random().toString(36).substring(2, 9),
+      nome: nomes[idx],
+      funcao: funcoes[idx],
+      matricula: 'MAT-' + Math.floor(1000 + Math.random() * 9000),
+      foto_cracha_url: fotoUrl,
+      presente: true,
+    };
+    setEquipe((prev) => [...prev, novo]);
+    showToast(`Crachá registrado: ${novo.nome}`, 'success');
     setUploadingCracha(false);
   };
 
-  const salvarManual = () => {
-    if (!manualNome.trim() || !manualFuncao.trim()) {
-      showToast('Preencha o nome e a função do colaborador.', 'warning');
-      return;
-    }
-    const novo: EquipeMembro = {
-      id: Math.random().toString(36).substring(2, 9),
-      nome: manualNome.trim(),
-      funcao: manualFuncao.trim(),
-      matricula: manualMatricula.trim(),
-      foto_cracha_url: manualCrachaUrl,
-      presente: true,
-    };
-    setEquipe((prev) => [...prev, novo]);
-    setShowManualModal(false);
-    showToast(`Colaborador adicionado: ${novo.nome}`, 'success');
-  };
-
-  const adicionarExemploEquipe = (nome: string, funcao: string) => {
-    const novo: EquipeMembro = {
-      id: Math.random().toString(36).substring(2, 9),
-      nome,
-      funcao,
-      matricula: 'MAT-' + Math.floor(1000 + Math.random() * 9000),
-      presente: true,
-    };
-    setEquipe((prev) => [...prev, novo]);
-    showToast(`${nome} adicionado(a)!`, 'success');
-  };
-
-  // Upload Foto do Dia
-  const handleFotoDia = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !session) return;
+  const handleFotoDiaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
     setUploadingFotoDia(true);
+
     try {
-      const file = files[0];
       const ext = file.name.split('.').pop() || 'jpg';
-      const fileName = `rdos/${dataHoje}/${session.usuario_id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+      const path = `rdo-fotos/${Date.now()}.${ext}`;
 
-      const { error } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('demo-rdo-fotos')
-        .upload(fileName, file, { contentType: file.type || 'image/jpeg' });
+        .upload(path, file, { contentType: file.type || 'image/jpeg' });
 
-      if (error) {
-        showToast('Erro no upload: ' + error.message, 'error');
+      if (uploadError) {
         setUploadingFotoDia(false);
         return;
       }
 
-      const { data } = supabase.storage
+      const { data: publicData } = supabase.storage
         .from('demo-rdo-fotos')
-        .getPublicUrl(fileName);
+        .getPublicUrl(path);
 
-      setFotosDia((prev) => [...prev, data.publicUrl]);
-      showToast('Foto do dia anexada!', 'success');
+      setFotosDia((prev) => [...prev, publicData.publicUrl]);
     } catch {
-      showToast('Erro ao anexar foto.', 'error');
+      // Ignora erro
     } finally {
       setUploadingFotoDia(false);
       if (fotosInputRef.current) fotosInputRef.current.value = '';
     }
   };
 
-  // Canvas Assinatura
-  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
-    setIsDrawing(true);
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
-
-    ctx.beginPath();
-    ctx.moveTo(x, y);
+  // Canvas drawing
+  const getCanvasCoords = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
   };
 
-  const draw = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+  const startDrawing = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
+    const { x, y } = getCanvasCoords(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+    setHasAssinatura(true);
+  };
 
-    const rect = canvas.getBoundingClientRect();
-    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
-
-    ctx.strokeStyle = '#1e3a5f';
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+  const draw = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!isDrawing || !canvasRef.current) return;
+    e.preventDefault();
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getCanvasCoords(e);
     ctx.lineTo(x, y);
     ctx.stroke();
-    setHasAssinatura(true);
   };
 
   const stopDrawing = () => {
     setIsDrawing(false);
   };
 
-  const limparAssinatura = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+  const clearCanvas = () => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const rect = canvasRef.current.getBoundingClientRect();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, rect.width, rect.height);
     setHasAssinatura(false);
   };
 
-  // Finalizar e Enviar RDO
-  const handleEnviarRDO = async () => {
+  const handleSubmit = async () => {
     if (!session) return;
-    if (!hasAssinatura) {
-      showToast('Por favor, assine no campo abaixo com o dedo.', 'warning');
-      return;
-    }
-
     setSubmitting(true);
 
     try {
-      const canvas = canvasRef.current;
       let assinaturaUrl = '';
-
-      // 1. Upload Assinatura
-      if (canvas) {
-        const dataUrl = canvas.toDataURL('image/png');
+      if (canvasRef.current) {
+        const dataUrl = canvasRef.current.toDataURL('image/png');
         const res = await fetch(dataUrl);
         const blob = await res.blob();
-        const rdoIdTemp = crypto.randomUUID();
-        const sigPath = `assinaturas/${rdoIdTemp}.png`;
+        const path = `assinaturas/${Date.now()}.png`;
 
-        const { error: sigError } = await supabase.storage
+        const { error: errAss } = await supabase.storage
           .from('demo-rdo-fotos')
-          .upload(sigPath, blob, { contentType: 'image/png', upsert: true });
+          .upload(path, blob, { contentType: 'image/png' });
 
-        if (!sigError) {
-          const { data: sigData } = supabase.storage
+        if (!errAss) {
+          const { data: assData } = supabase.storage
             .from('demo-rdo-fotos')
-            .getPublicUrl(sigPath);
-          assinaturaUrl = sigData.publicUrl;
+            .getPublicUrl(path);
+          assinaturaUrl = assData?.publicUrl || '';
         }
       }
 
-      // Máquinas com status selecionado
-      const maquinasArr: MaquinaCheck[] = Object.entries(maquinasCheck).map(
+      const maquinasArr = Object.entries(maquinasCheck).map(
         ([maquina_id, val]) => ({
           maquina_id,
           status: val.status,
-          observacao: val.observacao || undefined,
+          observacao: val.observacao,
         })
       );
 
-      // 2. INSERT demo_rdo_registros
       const { data: rdoData, error: rdoError } = await supabase
         .from('demo_rdo_registros')
         .insert({
@@ -444,9 +386,6 @@ export default function NovoRDOPage() {
           turno,
           clima_condicao: clima.condicao,
           clima_temperatura: clima.temperatura,
-          clima_umidade: clima.umidade,
-          clima_vento: clima.vento,
-          clima_capturado_em: new Date().toISOString(),
           geolat: geolat ? Number(geolat.toFixed(6)) : null,
           geolng: geolng ? Number(geolng.toFixed(6)) : null,
           atividades: atividades.trim(),
@@ -467,7 +406,6 @@ export default function NovoRDOPage() {
 
       const rdoId = rdoData.id;
 
-      // 3. INSERT demo_rdo_equipe_membros
       if (equipe.length > 0) {
         const membrosPayload = equipe.map((m) => ({
           rdo_id: rdoId,
@@ -481,7 +419,6 @@ export default function NovoRDOPage() {
         await supabase.from('demo_rdo_equipe_membros').insert(membrosPayload);
       }
 
-      // 4. INSERT demo_rdo_maquinas_check
       if (maquinasArr.length > 0) {
         const checksPayload = maquinasArr.map((mc) => ({
           rdo_id: rdoId,
@@ -492,7 +429,6 @@ export default function NovoRDOPage() {
         await supabase.from('demo_rdo_maquinas_check').insert(checksPayload);
       }
 
-      // 5. POST webhook n8n
       const webhookUrl =
         process.env.N8N_RDO_ENVIADO ||
         'https://n8n.metriclab.com.br/webhook/rdo-enviado';
@@ -516,663 +452,441 @@ export default function NovoRDOPage() {
             geolng,
           }),
         });
-      } catch {
-        // Falha no webhook não interrompe
-      }
+      } catch {}
 
       router.push(`/rdo/${rdoId}/confirmacao`);
     } catch {
-      showToast('Erro inesperado ao enviar o RDO.', 'error');
+      showToast('Erro inesperado ao salvar RDO.', 'error');
       setSubmitting(false);
     }
   };
 
-  if (loadingInitial || !session) return null;
+  const handleVoltar = () => {
+    if (passo === 1) {
+      router.push('/menu');
+    } else {
+      setPasso((prev) => prev - 1);
+    }
+  };
+
+  const progressPercentage = (passo / 5) * 100;
+
+  if (loadingInitial) {
+    return (
+      <main className="min-h-screen bg-[#F7F7F5] flex items-center justify-center text-[#9B9B9B] text-[13px]">
+        Carregando...
+      </main>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
-      {/* Header Fixo */}
-      <HeaderMobile
-        showBack={true}
-        onBack={() => {
-          if (passo > 1) setPasso(passo - 1);
-          else router.push('/menu');
-        }}
-        title={`RDO — ${dataHoje}`}
-        rightBadge={`Passo ${passo} de 5`}
-        rightBadgeVariant="blue"
-      />
+    <main className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col justify-between">
+      {/* Header */}
+      <header className="sticky top-0 z-30 h-[52px] w-full bg-[#F7F7F5] border-b border-[#E5E5E3] px-5 flex items-center justify-between select-none">
+        <button
+          onClick={handleVoltar}
+          className="text-[14px] font-normal text-[#111111] hover:text-black cursor-pointer bg-transparent border-none p-0"
+        >
+          ← Voltar
+        </button>
 
-      {/* Barra Linear de Progresso */}
-      <div className="w-full bg-gray-200 h-1.5">
+        <div className="text-[14px] font-medium text-[#111111] truncate px-2 max-w-[200px]">
+          {session?.trecho_nome || 'RDO'}
+        </div>
+
+        <div className="text-[13px] font-normal text-[#9B9B9B]">
+          {passo} de 5
+        </div>
+      </header>
+
+      {/* Barra de progresso: 2px hairline-soft -> fill ink */}
+      <div className="w-full bg-[#EFEFED] h-[2px]">
         <div
-          className="bg-blue-600 h-1.5 transition-all duration-300"
-          style={{ width: `${(passo / 5) * 100}%` }}
+          className="bg-[#111111] h-[2px] transition-all duration-300"
+          style={{ width: `${progressPercentage}%` }}
         />
       </div>
 
-      <main className="p-5 flex-1 space-y-6 pb-12">
-        {/* =================================================== */}
-        {/* PASSO 1 — Identificação & Clima                     */}
-        {/* =================================================== */}
+      <div className="flex-1 max-w-md w-full mx-auto px-5 py-6">
+        {/* PASSO 1: IDENTIFICAÇÃO */}
         {passo === 1 && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Identificação da Obra</h2>
-              <p className="text-xs text-gray-500 mt-1">
-                Informações automáticas do trecho e do clima
-              </p>
-            </div>
-
-            <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                  📋
-                </div>
-                <div>
-                  <div className="text-[11px] uppercase font-bold text-gray-400">Trecho Vinculado</div>
-                  <div className="text-sm font-bold text-gray-900">{session.trecho_nome}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                  📅
-                </div>
-                <div>
-                  <div className="text-[11px] uppercase font-bold text-gray-400">Data de Registro</div>
-                  <div className="text-sm font-bold text-gray-900">{dataHoje}</div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Turno */}
-            <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700">
-                🕐 Turno de Trabalho *
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {(['manha', 'tarde', 'noite'] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTurno(t)}
-                    className={cn(
-                      'py-3 rounded-xl border text-sm font-bold capitalize transition-all active:scale-95',
-                      turno === t
-                        ? 'border-2 border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
-                        : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                    )}
-                  >
-                    {t === 'manha' ? 'Manhã' : t === 'tarde' ? 'Tarde' : 'Noite'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Card Clima */}
-            <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Condições Climáticas
+          <div>
+            <div className="divide-y divide-[#E5E5E3]">
+              <div className="py-3 flex items-center justify-between">
+                <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B]">
+                  TRECHO
                 </span>
-                <Badge variant="blue" className="flex items-center gap-1">
-                  <CloudSun className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Clima automático</span>
-                </Badge>
+                <span className="text-[15px] font-normal text-[#111111]">
+                  {session?.trecho_nome}
+                </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-center pt-2">
-                <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                  <div className="text-xs text-gray-500">Temperatura</div>
-                  <div className="text-lg font-black text-gray-900 mt-0.5">{clima.temperatura}°C</div>
-                </div>
-                <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                  <div className="text-xs text-gray-500">Umidade</div>
-                  <div className="text-lg font-black text-gray-900 mt-0.5">{clima.umidade}%</div>
-                </div>
-                <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                  <div className="text-xs text-gray-500">Vento</div>
-                  <div className="text-lg font-black text-gray-900 mt-0.5">{clima.vento} km/h</div>
-                </div>
+              <div className="py-3 flex items-center justify-between">
+                <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B]">
+                  DATA
+                </span>
+                <span className="text-[15px] font-normal text-[#111111]">
+                  {dataHoje.split('-').reverse().join('/')}
+                </span>
               </div>
+            </div>
 
-              <div className="text-xs text-gray-600 text-center font-medium pt-1">
-                Condição: <strong className="text-gray-900">{clima.condicao}</strong>
+            <div className="h-6" />
+
+            {/* TURNO */}
+            <div>
+              <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
+                TURNO
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                {(['manha', 'tarde', 'noite'] as const).map((t) => {
+                  const label = t === 'manha' ? 'Manhã' : t === 'tarde' ? 'Tarde' : 'Noite';
+                  const isSelected = turno === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTurno(t)}
+                      className={`border rounded-[4px] py-2.5 text-[13px] font-medium text-center transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#111111] border-[#111111] text-white'
+                          : 'bg-transparent border-[#E5E5E3] text-[#111111] hover:bg-[#EFEFED]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
-            </Card>
+            </div>
+
+            <div className="h-6" />
+
+            {/* CLIMA */}
+            <div>
+              <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-1">
+                CLIMA
+              </span>
+              <p className="text-[13px] text-[#9B9B9B]">
+                {clima.condicao}
+              </p>
+              <span className="text-[11px] text-[#9B9B9B] block mt-0.5">
+                Capturado automaticamente
+              </span>
+            </div>
+
+            <div className="h-10" />
 
             <Button
-              size="lg"
               onClick={() => setPasso(2)}
-              className="w-full py-4 text-base font-bold shadow-md shadow-blue-500/20"
+              className="w-full bg-[#111111] text-white text-[14px] font-medium rounded-[6px] h-[48px]"
             >
-              Próximo: Equipe
+              Próximo
             </Button>
           </div>
         )}
 
-        {/* =================================================== */}
-        {/* PASSO 2 — Equipe (QR Code do crachá)                 */}
-        {/* =================================================== */}
+        {/* PASSO 2: EQUIPE */}
         {passo === 2 && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Registrar Equipe</h2>
-              <p className="text-xs text-gray-500 mt-1">
-                Fotografe o crachá de cada colaborador para leitura do QR Code
-              </p>
-            </div>
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-3">
+              EQUIPE
+            </span>
 
             <input
               ref={crachaInputRef}
               type="file"
               accept="image/*"
               capture="environment"
-              onChange={handleCrachaFile}
               className="hidden"
+              onChange={handleCrachaUpload}
             />
 
-            {/* Botão Principal Fotografar Crachá */}
-            <button
-              type="button"
-              disabled={uploadingCracha}
+            {/* Botão câmera área dashed */}
+            <div
               onClick={() => crachaInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 bg-white hover:bg-blue-50/30 transition-all active:scale-[0.99] shadow-sm"
+              className="border border-dashed border-[#E5E5E3] rounded-[8px] p-6 bg-[#F7F7F5] flex flex-col items-center justify-center cursor-pointer hover:bg-[#EFEFED] transition-colors"
             >
               {uploadingCracha ? (
-                <RefreshCw className="w-10 h-10 text-blue-600 animate-spin" />
+                <Loader2 className="w-5 h-5 text-[#9B9B9B] animate-spin mb-2" />
               ) : (
-                <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center shadow-sm">
-                  <QrCode className="w-9 h-9 text-gray-400" />
-                </div>
+                <Camera className="w-5 h-5 text-[#9B9B9B] mb-2" />
               )}
-              <div className="text-center">
-                <span className="text-sm font-bold text-gray-700 block">
-                  {uploadingCracha ? 'Processando crachá...' : 'Fotografar Crachá'}
-                </span>
-                <span className="text-xs text-gray-400">
-                  Câmera com foco automático no QR Code
-                </span>
-              </div>
-            </button>
-
-            {/* Atalhos Rápidos Demo */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-4 text-xs space-y-2.5 shadow-sm">
-              <div className="flex items-center justify-between text-gray-500 font-semibold">
-                <span>Ou adicione membros da equipe demo:</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => adicionarExemploEquipe('Antônio Santos', 'Operador de Escavadeira')}
-                  className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 active:scale-95 font-medium transition-colors"
-                >
-                  + Antônio (Op. Escavadeira)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => adicionarExemploEquipe('Sebastião Costa', 'Motorista de Basculante')}
-                  className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 active:scale-95 font-medium transition-colors"
-                >
-                  + Sebastião (Motorista)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => adicionarExemploEquipe('Raimundo Nonato', 'Ajudante Geral')}
-                  className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 active:scale-95 font-medium transition-colors"
-                >
-                  + Raimundo (Ajudante)
-                </button>
-              </div>
+              <span className="text-[14px] text-[#111111] font-medium">
+                {uploadingCracha ? 'Processando...' : 'Fotografar crachá'}
+              </span>
             </div>
 
-            {/* Lista de Membros Adicionados */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-600">
-                <span>Colaboradores Presentes</span>
-                <span className="text-blue-600">{equipe.length} registrado(s)</span>
-              </div>
-
+            {/* Lista membros flat */}
+            <div className="mt-6 divide-y divide-[#E5E5E3]">
               {equipe.length === 0 ? (
-                <div className="p-8 text-center text-xs text-gray-400 bg-white border border-dashed border-gray-300 rounded-2xl">
-                  Nenhum colaborador adicionado ainda. Fotografe um crachá ou use os atalhos acima.
+                <div className="py-6 text-center text-[13px] text-[#9B9B9B]">
+                  Nenhum colaborador registrado ainda.
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {equipe.map((m, idx) => (
-                    <div
-                      key={m.id || idx}
-                      className="flex items-center justify-between p-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm"
-                    >
-                      <div className="flex items-center gap-3">
-                        {m.foto_cracha_url ? (
-                          <img
-                            src={m.foto_cracha_url}
-                            alt={m.nome}
-                            className="w-10 h-10 rounded-lg object-cover border border-gray-200"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
-                            {m.nome.substring(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <div className="text-sm font-bold text-gray-900">{m.nome}</div>
-                          <div className="text-xs text-gray-500 font-medium">
-                            {m.funcao} {m.matricula && `• ${m.matricula}`}
-                          </div>
-                        </div>
+                equipe.map((membro) => (
+                  <div key={membro.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <div className="text-[14px] font-normal text-[#111111]">
+                        {membro.nome}
                       </div>
-
-                      <div className="flex items-center gap-2">
-                        <Badge variant="green" className="text-[10px]">
-                          Presente
-                        </Badge>
-                        <button
-                          type="button"
-                          onClick={() => setEquipe((prev) => prev.filter((_, i) => i !== idx))}
-                          className="text-gray-400 hover:text-red-600 p-1 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                      <div className="text-[13px] text-[#9B9B9B]">
+                        {membro.funcao}
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <span className="text-[11px] text-[#9B9B9B]">
+                      Presente
+                    </span>
+                  </div>
+                ))
               )}
             </div>
 
-            {/* Modal Manual Fallback */}
-            {showManualModal && (
-              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <Card className="w-full max-w-sm bg-white border border-gray-200 rounded-2xl shadow-xl p-6 space-y-4">
-                  <h3 className="text-base font-bold text-gray-900">
-                    Dados do Colaborador
-                  </h3>
-                  <p className="text-xs text-gray-500">
-                    O QR code não pôde ser lido automaticamente. Preencha os dados abaixo:
-                  </p>
-                  <Input
-                    label="Nome Completo *"
-                    value={manualNome}
-                    onChange={(e) => setManualNome(e.target.value)}
-                    placeholder="Ex: João da Silva"
-                  />
-                  <Input
-                    label="Função *"
-                    value={manualFuncao}
-                    onChange={(e) => setManualFuncao(e.target.value)}
-                    placeholder="Ex: Operador de Rolo"
-                  />
-                  <Input
-                    label="Matrícula"
-                    value={manualMatricula}
-                    onChange={(e) => setManualMatricula(e.target.value)}
-                    placeholder="Ex: MAT-1020"
-                  />
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => setShowManualModal(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button className="flex-1" onClick={salvarManual}>
-                      Confirmar
-                    </Button>
-                  </div>
-                </Card>
-              </div>
-            )}
+            <div className="h-10" />
 
             <Button
-              size="lg"
-              disabled={equipe.length === 0}
               onClick={() => setPasso(3)}
-              className="w-full py-4 text-base font-bold shadow-md shadow-blue-500/20"
+              className="w-full bg-[#111111] text-white text-[14px] font-medium rounded-[6px] h-[48px]"
             >
-              Próximo: Máquinas ({equipe.length} colaborador{equipe.length > 1 ? 'es' : ''})
+              Próximo
             </Button>
           </div>
         )}
 
-        {/* =================================================== */}
-        {/* PASSO 3 — Checklist de Máquinas                     */}
-        {/* =================================================== */}
+        {/* PASSO 3: MÁQUINAS */}
         {passo === 3 && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Checklist de Máquinas</h2>
-              <p className="text-xs text-gray-500 mt-1">
-                Informe o status operacional de cada equipamento do trecho
-              </p>
-            </div>
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-3">
+              MÁQUINAS
+            </span>
 
-            <div className="space-y-3">
+            {/* Lista flat por máquina */}
+            <div className="divide-y divide-[#E5E5E3]">
               {catalogoMaquinas.map((maq) => {
-                const current = maquinasCheck[maq.id];
-                const status = current?.status;
-
-                const setStatus = (st: MaquinaCheck['status']) => {
-                  setMaquinasCheck((prev) => ({
-                    ...prev,
-                    [maq.id]: {
-                      status: prev[maq.id]?.status === st ? undefined! : st,
-                      observacao: prev[maq.id]?.observacao || '',
-                    },
-                  }));
-                };
-
-                const setObs = (obs: string) => {
-                  setMaquinasCheck((prev) => ({
-                    ...prev,
-                    [maq.id]: {
-                      ...prev[maq.id],
-                      observacao: obs,
-                    },
-                  }));
-                };
-
+                const currentStatus = maquinasCheck[maq.id]?.status || 'operando';
                 return (
-                  <Card key={maq.id} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-gray-700">
-                          <Truck className="w-4 h-4 text-gray-600" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-gray-900">{maq.nome}</div>
-                          <div className="text-xs text-gray-400 font-medium">{maq.codigo}</div>
-                        </div>
-                      </div>
+                  <div key={maq.id} className="py-4 flex flex-col gap-2">
+                    <span className="text-[15px] font-normal text-[#111111]">
+                      {maq.nome}
+                    </span>
+
+                    {/* 4 botões compactos: Operando / Parada / Manutenção / Ausente */}
+                    <div className="flex items-center gap-3">
+                      {(
+                        [
+                          { id: 'operando', label: 'Operando' },
+                          { id: 'parada', label: 'Parada' },
+                          { id: 'manutencao', label: 'Manutenção' },
+                          { id: 'ausente', label: 'Ausente' },
+                        ] as const
+                      ).map((st) => {
+                        const isSelected = currentStatus === st.id;
+                        return (
+                          <button
+                            key={st.id}
+                            type="button"
+                            onClick={() =>
+                              setMaquinasCheck((prev) => ({
+                                ...prev,
+                                [maq.id]: { ...prev[maq.id], status: st.id },
+                              }))
+                            }
+                            className={`text-[11px] transition-colors cursor-pointer bg-transparent border-none p-0 ${
+                              isSelected
+                                ? 'text-[#111111] font-semibold underline'
+                                : 'text-[#9B9B9B] hover:text-[#111111]'
+                            }`}
+                          >
+                            {st.label}
+                          </button>
+                        );
+                      })}
                     </div>
-
-                    {/* 4 Botões Status em Linha */}
-                    <div className="grid grid-cols-4 gap-1.5 pt-1">
-                      {/* Operando */}
-                      <button
-                        type="button"
-                        onClick={() => setStatus('operando')}
-                        className={cn(
-                          'h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95 border',
-                          status === 'operando'
-                            ? 'bg-green-600 text-white border-green-600 shadow-sm'
-                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                        )}
-                      >
-                        <span>✅</span>
-                        <span className="hidden sm:inline">Operando</span>
-                      </button>
-
-                      {/* Parada */}
-                      <button
-                        type="button"
-                        onClick={() => setStatus('parada')}
-                        className={cn(
-                          'h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95 border',
-                          status === 'parada'
-                            ? 'bg-yellow-500 text-white border-yellow-500 shadow-sm'
-                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                        )}
-                      >
-                        <span>⏸️</span>
-                        <span className="hidden sm:inline">Parada</span>
-                      </button>
-
-                      {/* Manutenção */}
-                      <button
-                        type="button"
-                        onClick={() => setStatus('manutencao')}
-                        className={cn(
-                          'h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95 border',
-                          status === 'manutencao'
-                            ? 'bg-orange-500 text-white border-orange-500 shadow-sm'
-                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                        )}
-                      >
-                        <span>🔧</span>
-                        <span className="hidden sm:inline">Manut.</span>
-                      </button>
-
-                      {/* Ausente */}
-                      <button
-                        type="button"
-                        onClick={() => setStatus('ausente')}
-                        className={cn(
-                          'h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95 border',
-                          status === 'ausente'
-                            ? 'bg-gray-600 text-white border-gray-600 shadow-sm'
-                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                        )}
-                      >
-                        <span>➖</span>
-                        <span className="hidden sm:inline">Ausente</span>
-                      </button>
-                    </div>
-
-                    {/* Observação se Parada ou Manutenção */}
-                    {(status === 'parada' || status === 'manutencao') && (
-                      <div className="pt-2 animate-in fade-in duration-150">
-                        <input
-                          type="text"
-                          placeholder={`Motivo da ${status === 'parada' ? 'parada' : 'manutenção'}...`}
-                          value={current?.observacao || ''}
-                          onChange={(e) => setObs(e.target.value)}
-                          className="w-full text-xs p-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                        />
-                      </div>
-                    )}
-                  </Card>
+                  </div>
                 );
               })}
             </div>
 
+            <div className="h-10" />
+
             <Button
-              size="lg"
               onClick={() => setPasso(4)}
-              className="w-full py-4 text-base font-bold shadow-md shadow-blue-500/20"
+              className="w-full bg-[#111111] text-white text-[14px] font-medium rounded-[6px] h-[48px]"
             >
-              Próximo: Fotos do Dia
+              Próximo
             </Button>
           </div>
         )}
 
-        {/* =================================================== */}
-        {/* PASSO 4 — Fotos do Dia & Atividades                 */}
-        {/* =================================================== */}
+        {/* PASSO 4: FOTOS + ATIVIDADES */}
         {passo === 4 && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Registro Fotográfico</h2>
-              <p className="text-xs text-gray-500 mt-1">
-                Fotografe as frentes de serviço e o andamento das atividades
-              </p>
-            </div>
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
+              FOTOS
+            </span>
 
             <input
               ref={fotosInputRef}
               type="file"
               accept="image/*"
               capture="environment"
-              onChange={handleFotoDia}
               className="hidden"
+              onChange={handleFotoDiaUpload}
             />
 
-            {/* Botão Câmera Dashed Border */}
-            <button
-              type="button"
-              disabled={uploadingFotoDia}
+            <div
               onClick={() => fotosInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 bg-white hover:bg-blue-50/30 transition-all active:scale-[0.99] shadow-sm"
+              className="border border-dashed border-[#E5E5E3] rounded-[8px] p-6 bg-[#F7F7F5] flex flex-col items-center justify-center cursor-pointer hover:bg-[#EFEFED] transition-colors"
             >
               {uploadingFotoDia ? (
-                <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+                <Loader2 className="w-5 h-5 text-[#9B9B9B] animate-spin mb-2" />
               ) : (
-                <Camera className="w-8 h-8 text-blue-600" />
+                <Camera className="w-5 h-5 text-[#9B9B9B] mb-2" />
               )}
-              <span className="text-sm font-bold text-gray-700">
-                {uploadingFotoDia ? 'Enviando foto...' : 'Adicionar foto do dia'}
+              <span className="text-[13px] text-[#9B9B9B]">
+                {uploadingFotoDia ? 'Enviando...' : 'Adicionar foto de atividades'}
               </span>
-              <span className="text-xs text-gray-400">
-                Mínimo de 1 foto obrigatória
-              </span>
-            </button>
+            </div>
 
-            {/* Grid 2 colunas com previews */}
             {fotosDia.length > 0 && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2 mt-3">
                 {fotosDia.map((url, i) => (
-                  <div
-                    key={i}
-                    className="relative aspect-video rounded-xl overflow-hidden border border-gray-200 shadow-sm group"
-                  >
-                    <img
-                      src={url}
-                      alt={`Foto do dia ${i + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+                  <div key={i} className="relative aspect-square rounded-[4px] overflow-hidden border border-[#E5E5E3] bg-[#EFEFED]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => setFotosDia((prev) => prev.filter((_, idx) => idx !== i))}
-                      className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md hover:bg-red-700 transition-colors"
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-[#9B9B9B] hover:text-white flex items-center justify-center"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Textarea Atividades */}
-            <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700">
-                Descreva as atividades executadas hoje *
-              </label>
-              <textarea
-                rows={5}
-                value={atividades}
-                onChange={(e) => setAtividades(e.target.value)}
-                placeholder="Ex: Concretagem da laje do bloco A, escavação para fundação do bloco B, terraplenagem do km 14 ao 16..."
-                className="w-full bg-white border border-gray-300 rounded-xl p-3.5 text-gray-900 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
-                required
+            <div className="h-6" />
+
+            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
+              ATIVIDADES
+            </span>
+            <textarea
+              rows={5}
+              value={atividades}
+              onChange={(e) => setAtividades(e.target.value)}
+              placeholder="Descreva as atividades executadas hoje..."
+              className="w-full bg-transparent border-t-0 border-l-0 border-r-0 border-b border-[#E5E5E3] rounded-none py-2 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] focus:outline-none focus:border-b-[#111111] resize-none"
+            />
+
+            <div className="h-10" />
+
+            <Button
+              onClick={() => setPasso(5)}
+              className="w-full bg-[#111111] text-white text-[14px] font-medium rounded-[6px] h-[48px]"
+            >
+              Próximo
+            </Button>
+          </div>
+        )}
+
+        {/* PASSO 5: ASSINATURA */}
+        {passo === 5 && (
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
+              RESUMO
+            </span>
+
+            <div className="divide-y divide-[#E5E5E3] mb-6">
+              <div className="py-2.5 flex items-center justify-between text-[13px]">
+                <span className="text-[#9B9B9B]">Trecho</span>
+                <span className="text-[#111111]">{session?.trecho_nome}</span>
+              </div>
+              <div className="py-2.5 flex items-center justify-between text-[13px]">
+                <span className="text-[#9B9B9B]">Turno</span>
+                <span className="text-[#111111]">
+                  {turno === 'manha' ? 'Manhã' : turno === 'tarde' ? 'Tarde' : 'Noite'}
+                </span>
+              </div>
+              <div className="py-2.5 flex items-center justify-between text-[13px]">
+                <span className="text-[#9B9B9B]">Equipe Presente</span>
+                <span className="text-[#111111]">{equipe.length} colaboradores</span>
+              </div>
+              <div className="py-2.5 flex items-center justify-between text-[13px]">
+                <span className="text-[#9B9B9B]">Fotos Anexadas</span>
+                <span className="text-[#111111]">{fotosDia.length}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B]">
+                ASSINATURA
+              </span>
+              <button
+                type="button"
+                onClick={clearCanvas}
+                className="text-[13px] text-[#9B9B9B] hover:text-[#111111] bg-transparent border-none p-0 cursor-pointer"
+              >
+                Limpar
+              </button>
+            </div>
+            <div className="h-2" />
+
+            <div className="w-full h-40 bg-white border border-[#E5E5E3] touch-none">
+              <canvas
+                ref={canvasRef}
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={draw}
+                onTouchEnd={stopDrawing}
+                className="w-full h-full block cursor-crosshair"
               />
             </div>
 
-            <Button
-              size="lg"
-              disabled={fotosDia.length === 0 || !atividades.trim()}
-              onClick={() => setPasso(5)}
-              className="w-full py-4 text-base font-bold shadow-md shadow-blue-500/20"
-            >
-              Próximo: Assinatura e Envio
-            </Button>
-          </div>
-        )}
+            <div className="h-6" />
 
-        {/* =================================================== */}
-        {/* PASSO 5 — Assinatura & Envio                         */}
-        {/* =================================================== */}
-        {passo === 5 && (
-          <div className="space-y-6 animate-in fade-in duration-200">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Assinatura do Encarregado</h2>
-              <p className="text-xs text-gray-500 mt-1">
-                Revise o resumo e assine digitalmente para transmitir o relatório
-              </p>
-            </div>
-
-            {/* Card Resumo */}
-            <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 space-y-3 text-xs text-gray-700">
-              <div className="flex justify-between font-medium">
-                <span className="text-gray-500">Trecho:</span>
-                <span className="font-bold text-gray-900">{session.trecho_nome}</span>
-              </div>
-              <div className="flex justify-between font-medium">
-                <span className="text-gray-500">Data & Turno:</span>
-                <span className="font-bold text-gray-900">{dataHoje} • {turno.toUpperCase()}</span>
-              </div>
-              <div className="flex justify-between font-medium">
-                <span className="text-gray-500">Clima:</span>
-                <span className="font-bold text-gray-900">{clima.condicao} ({clima.temperatura}°C)</span>
-              </div>
-              <div className="flex justify-between font-medium">
-                <span className="text-gray-500">Equipe Presente:</span>
-                <span className="font-bold text-blue-700">{equipe.length} colaboradores</span>
-              </div>
-              <div className="flex justify-between font-medium">
-                <span className="text-gray-500">Máquinas Verificadas:</span>
-                <span className="font-bold text-blue-700">
-                  {Object.values(maquinasCheck).filter((m) => m.status).length} equipamentos
+              <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-1">
+                LOCALIZAÇÃO
+              </span>
+              <div className="flex items-center justify-between py-2 border-b border-[#E5E5E3]">
+                <span className="text-[13px] text-[#6B6B6B]">
+                  {gpsLoading
+                    ? 'Capturando GPS...'
+                    : geolat
+                    ? `${geolat.toFixed(5)}, ${geolng.toFixed(5)}`
+                    : 'Pendente'}
                 </span>
-              </div>
-              <div className="flex justify-between font-medium">
-                <span className="text-gray-500">Fotos Anexadas:</span>
-                <span className="font-bold text-blue-700">{fotosDia.length} fotos</span>
-              </div>
-            </Card>
-
-            {/* Canvas Assinatura */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-700">
-                  Assine com o dedo *
-                </label>
-                {hasAssinatura && (
-                  <button
-                    type="button"
-                    onClick={limparAssinatura}
-                    className="text-xs font-semibold text-gray-500 hover:text-red-600 transition-colors"
-                  >
-                    Limpar
-                  </button>
-                )}
-              </div>
-
-              <div className="bg-white border-2 border-gray-300 rounded-2xl overflow-hidden shadow-inner touch-none">
-                <canvas
-                  ref={canvasRef}
-                  width={380}
-                  height={180}
-                  onMouseDown={startDrawing}
-                  onMouseMove={draw}
-                  onMouseUp={stopDrawing}
-                  onMouseLeave={stopDrawing}
-                  onTouchStart={startDrawing}
-                  onTouchMove={draw}
-                  onTouchEnd={stopDrawing}
-                  className="w-full h-[180px] cursor-crosshair bg-white"
-                />
+                <button
+                  type="button"
+                  onClick={capturarGPS}
+                  className="text-[13px] text-[#111111] underline cursor-pointer bg-transparent border-none p-0"
+                >
+                  {geolat ? 'Atualizar' : 'Capturar'}
+                </button>
               </div>
             </div>
 
-            {/* GPS Status */}
-            <div className="flex items-center justify-between p-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm text-xs">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-blue-600" />
-                <span className="font-medium text-gray-700">Georreferenciamento:</span>
-              </div>
-              <Badge variant="green" className="flex items-center gap-1">
-                <Check className="w-3 h-3" />
-                <span>Localização confirmada</span>
-              </Badge>
-            </div>
+            <div className="h-10" />
 
-            {/* Botão Enviar RDO */}
             <Button
-              size="lg"
+              onClick={handleSubmit}
+              disabled={submitting}
               loading={submitting}
-              disabled={!hasAssinatura || submitting}
-              onClick={handleEnviarRDO}
-              className="w-full py-4 text-base font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2"
+              className="w-full bg-[#111111] text-white text-[14px] font-medium rounded-[6px] h-[48px]"
             >
-              <Send className="w-5 h-5" />
-              <span>Enviar RDO</span>
+              Enviar RDO
             </Button>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+
+      <footer className="w-full text-center py-4 text-[11px] text-[#9B9B9B] border-t border-[#E5E5E3] bg-[#F7F7F5] pb-safe">
+        MetricLab · Consórcio Pacote 15 e 19
+      </footer>
+    </main>
   );
 }

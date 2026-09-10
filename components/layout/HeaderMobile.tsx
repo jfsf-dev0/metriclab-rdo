@@ -2,9 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 import { MetricLabLogo } from '@/components/brand/MetricLabLogo';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface HeaderMobileProps {
@@ -13,7 +11,6 @@ interface HeaderMobileProps {
   onBack?: () => void;
   backHref?: string;
   rightBadge?: string;
-  rightBadgeVariant?: 'blue' | 'green' | 'amber' | 'red' | 'gray';
   greeting?: string;
   className?: string;
 }
@@ -24,7 +21,6 @@ export function HeaderMobile({
   onBack,
   backHref,
   rightBadge,
-  rightBadgeVariant = 'blue',
   greeting,
   className,
 }: HeaderMobileProps) {
@@ -43,7 +39,7 @@ export function HeaderMobile({
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 h-14 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between px-4 select-none',
+        'sticky top-0 z-40 h-[52px] w-full bg-[#F7F7F5] border-b border-[#E5E5E3] px-5 flex items-center justify-between select-none',
         className
       )}
     >
@@ -51,11 +47,10 @@ export function HeaderMobile({
         {showBack ? (
           <button
             onClick={handleBack}
-            className="p-1.5 -ml-1 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 active:scale-95 transition-all flex items-center gap-1 text-xs"
+            className="text-[14px] font-normal text-[#111111] hover:text-black cursor-pointer bg-transparent border-none p-0 flex items-center gap-1"
             aria-label="Voltar"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium hidden xs:inline">Voltar</span>
+            ← Voltar
           </button>
         ) : (
           <Link href="/menu" className="flex items-center">
@@ -66,22 +61,22 @@ export function HeaderMobile({
 
       {title && (
         <div className="flex-1 text-center px-2">
-          <h1 className="text-sm font-bold text-gray-900 truncate">
+          <h1 className="text-[14px] font-medium text-[#111111] truncate tracking-[-0.2px]">
             {title}
           </h1>
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2 min-w-[70px]">
+      <div className="flex items-center justify-end gap-2 min-w-[70px] text-[#111111]">
         {greeting && (
-          <span className="text-xs text-gray-600 font-medium hidden sm:inline">
+          <span className="text-[13px] text-[#9B9B9B] font-normal">
             {greeting}
           </span>
         )}
         {rightBadge && (
-          <Badge variant={rightBadgeVariant}>
+          <span className="bg-transparent border border-[#E5E5E3] rounded-[4px] px-2 py-0.5 text-[11px] font-medium tracking-[0.3px] text-[#6B6B6B]">
             {rightBadge}
-          </Badge>
+          </span>
         )}
       </div>
     </header>

@@ -79,3 +79,14 @@ Executadas com sucesso via PostgreSQL direto:
 - **Cloudflare DNS**: CNAME criado `rdo.metriclab.com.br` -> `cname.vercel-dns.com` (DNS Only / proxied: false).
 - **GitHub**: Repositório `jfsf-dev0/metriclab-rdo`.
 - **Vercel**: Deploy de produção vinculado ao domínio `rdo.metriclab.com.br`.
+
+---
+
+## 09 de Setembro de 2026 — Refatoração Design System 2.0 (Runway + Linear)
+- **Implementação dos tokens de cor**: `--canvas: #F7F7F5`, `--surface: #FFFFFF`, `--hairline: #E5E5E3`, `--hairline-soft: #EFEFED`, `--ink: #111111`, `--ink-soft: #3A3A3A`, `--graphite: #6B6B6B`, `--stone: #9B9B9B`, `--ash: #C4C4C2`, `--accent: #F5A623`.
+- **Substituição dos botões**: `#111111` sólido, texto branco, 48px altura mínima, border radius 6px (`rounded-md`), sem ícones em botões primários. Botões secundários transparentes com texto `text-graphite` e seta `← Voltar`.
+- **Inputs estilo Runway**: Fundo transparente, apenas linha inferior `border-b border-hairline`, foco escuro `#111111`, sem cantos arredondados, label uppercase 11px stone.
+- **Remoção de ruído visual**: Remoção total de emojis em cards e botões, eliminação de badges coloridos (verde, vermelho, azul, âmbar), remoção de sombras drop shadow (`shadow-none`), cartões em layout plano com divisores sutis de 1px hairline.
+- **Header padronizado**: Logo oficial `m<span class="text-accent">.</span> MetricLab` com tipografia Inter sem serifa, sem badges coloridos de ambiente.
+- **Build validado**: Next.js 14 production build validado com 0 erros de TypeScript/linting.
+

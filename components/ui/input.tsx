@@ -4,37 +4,33 @@ import { cn } from '@/lib/utils';
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
-  leftIcon?: React.ReactNode;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, leftIcon, id, ...props }, ref) => {
+  ({ className, label, error, id, ...props }, ref) => {
+    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+
     return (
-      <div className="w-full space-y-1.5">
+      <div className="w-full text-left">
         {label && (
-          <label htmlFor={id} className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+          <label
+            htmlFor={inputId}
+            className="block text-[11px] font-medium text-[#9B9B9B] uppercase tracking-[0.5px] mb-2"
+          >
             {label}
           </label>
         )}
-        <div className="relative flex items-center">
-          {leftIcon && (
-            <div className="absolute left-3.5 flex items-center pointer-events-none text-gray-400">
-              {leftIcon}
-            </div>
+        <input
+          id={inputId}
+          ref={ref}
+          className={cn(
+            'w-full bg-transparent border-t-0 border-l-0 border-r-0 border-b border-[#E5E5E3] rounded-none py-3 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] transition-colors focus:outline-none focus:border-b-[#111111] disabled:opacity-40 disabled:cursor-not-allowed',
+            error && 'border-b-[#111111]',
+            className
           )}
-          <input
-            id={id}
-            ref={ref}
-            className={cn(
-              'w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder:text-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm',
-              leftIcon && 'pl-10',
-              error && 'border-red-500 focus:ring-red-500 focus:border-red-500',
-              className
-            )}
-            {...props}
-          />
-        </div>
-        {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+          {...props}
+        />
+        {error && <p className="text-[12px] text-[#111111] mt-1.5">{error}</p>}
       </div>
     );
   }

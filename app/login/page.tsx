@@ -1,13 +1,10 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MetricLabLogo } from '@/components/brand/MetricLabLogo';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import { supabase } from '@/lib/supabase';
-import { User, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,7 +48,6 @@ export default function LoginPage() {
         cargo: user.cargo || 'Encarregado',
       };
 
-      // Salva no localStorage e no Cookie para o middleware
       localStorage.setItem('ml_rdo_session', JSON.stringify(sessionData));
       document.cookie = `ml_rdo_session=${encodeURIComponent(
         JSON.stringify(sessionData)
@@ -65,119 +61,84 @@ export default function LoginPage() {
     }
   };
 
-  const setDemoUser = (nomeDemo: string, chaveDemo: string) => {
-    setNome(nomeDemo);
-    setChaveAcesso(chaveDemo);
-  };
-
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900 flex flex-col justify-between p-4 sm:p-6 select-none relative pb-safe">
+    <main className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col justify-between p-6 select-none relative pb-safe">
       <div className="w-full max-w-sm mx-auto my-auto py-6">
-        {/* Logo MetricLab pequeno acima do card */}
-        <div className="flex justify-center mb-6">
-          <MetricLabLogo size="md" showText={true} />
+        {/* Logo "m." topo centralizado */}
+        <div className="flex justify-center">
+          <span
+            style={{
+              fontSize: '32px',
+              fontWeight: 700,
+              color: '#111111',
+              letterSpacing: '-0.5px',
+              lineHeight: 1,
+            }}
+          >
+            m<span style={{ color: '#F5A623' }}>.</span>
+          </span>
         </div>
 
-        {/* Card central */}
-        <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 mx-4 space-y-6">
-          <div className="text-center mb-6 space-y-1">
-            <h1 className="text-xl font-bold text-gray-900">Acesso ao RDO</h1>
-            <p className="text-gray-500 text-sm">
-              Use as credenciais enviadas pelo supervisor
-            </p>
-          </div>
+        <div className="h-12" />
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <Input
-              id="nome"
-              label="Seu nome"
-              type="text"
-              placeholder="Ex: Carlos Encarregado"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              leftIcon={<User className="w-4 h-4" />}
-              autoComplete="name"
-              required
-            />
-
-            <Input
-              id="chave"
-              label="Chave de acesso"
-              type="password"
-              placeholder="••••••"
-              value={chaveAcesso}
-              onChange={(e) => setChaveAcesso(e.target.value)}
-              leftIcon={<Lock className="w-4 h-4" />}
-              autoComplete="current-password"
-              required
-            />
-
-            <Button
-              type="submit"
-              size="lg"
-              loading={loading}
-              className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-xl px-6 py-3 min-h-[48px] w-full transition-all duration-200 shadow-sm mt-2 flex items-center justify-center gap-2"
-            >
-              <span>Entrar</span>
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </form>
-
-          {/* Texto auxiliar: text-gray-400 text-xs */}
-          <p className="text-gray-400 text-xs text-center pt-2">
-            Credenciais enviadas via WhatsApp
+        {/* Heading + Subtitle */}
+        <div className="text-left">
+          <h1 className="text-[28px] font-medium text-[#111111] tracking-[-0.5px] leading-[1.1]">
+            Acesso ao RDO
+          </h1>
+          <p className="text-[15px] font-normal text-[#6B6B6B] mt-1.5 leading-[1.5]">
+            Use as credenciais enviadas pelo supervisor
           </p>
+        </div>
 
-          {/* Quick Demo Access Pills */}
-          <div className="mt-6 pt-5 border-t border-gray-100">
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold mb-2.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-              <span>Acesso Rápido Demo:</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setDemoUser('Carlos Encarregado', 'RDO001')}
-                className="text-left text-xs p-2 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-blue-700 transition-colors border border-gray-200"
-              >
-                <div className="font-bold truncate text-gray-900">Carlos (Lote 15)</div>
-                <div className="text-[11px] text-gray-500">Chave: RDO001</div>
-              </button>
+        <div className="h-10" />
 
-              <button
-                type="button"
-                onClick={() => setDemoUser('Paulo Supervisor', 'RDO002')}
-                className="text-left text-xs p-2 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-blue-700 transition-colors border border-gray-200"
-              >
-                <div className="font-bold truncate text-gray-900">Paulo (Lote 15)</div>
-                <div className="text-[11px] text-gray-500">Chave: RDO002</div>
-              </button>
+        <form onSubmit={handleLogin}>
+          <Input
+            id="nome"
+            label="SEU NOME"
+            type="text"
+            placeholder="Ex: Carlos Encarregado"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            autoComplete="name"
+            required
+          />
 
-              <button
-                type="button"
-                onClick={() => setDemoUser('Marcos Silva', 'RDO003')}
-                className="text-left text-xs p-2 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-blue-700 transition-colors border border-gray-200"
-              >
-                <div className="font-bold truncate text-gray-900">Marcos (Lote 19)</div>
-                <div className="text-[11px] text-gray-500">Chave: RDO003</div>
-              </button>
+          <div className="h-8" />
 
-              <button
-                type="button"
-                onClick={() => setDemoUser('João Ferreira', 'RDO004')}
-                className="text-left text-xs p-2 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-blue-700 transition-colors border border-gray-200"
-              >
-                <div className="font-bold truncate text-gray-900">João (Lote 19)</div>
-                <div className="text-[11px] text-gray-500">Chave: RDO004</div>
-              </button>
-            </div>
-          </div>
-        </Card>
+          <Input
+            id="chave"
+            label="CHAVE DE ACESSO"
+            type="password"
+            placeholder="••••••"
+            value={chaveAcesso}
+            onChange={(e) => setChaveAcesso(e.target.value)}
+            autoComplete="current-password"
+            required
+          />
+
+          <div className="h-10" />
+
+          <Button
+            type="submit"
+            size="lg"
+            loading={loading}
+            className="w-full bg-[#111111] text-white text-[14px] font-medium rounded-[6px] h-[48px]"
+          >
+            Entrar
+          </Button>
+        </form>
+
+        <div className="h-4" />
+
+        <p className="text-[11px] font-normal text-[#9B9B9B] text-center">
+          MetricLab · Consórcio Pacote 15 e 19
+        </p>
       </div>
 
-      {/* Footer minimalista */}
-      <footer className="w-full text-center py-2 text-xs text-gray-400">
-        MetricLab • Inteligência Operacional
+      <footer className="w-full text-center py-2 text-[11px] text-[#9B9B9B]">
+        MetricLab Inteligência Operacional
       </footer>
     </main>
   );
