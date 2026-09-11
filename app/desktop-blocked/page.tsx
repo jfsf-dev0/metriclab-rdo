@@ -7,19 +7,30 @@ import { Smartphone } from 'lucide-react';
 export default function DesktopBlockedPage() {
   const router = useRouter();
 
-  // Se o usuário estiver no modo PWA instalado (standalone), desbloqueia e redireciona
+  // Se o usuário estiver no modo PWA instalado (standalone) ou for dispositivo móvel, redireciona
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const isStandalone =
         window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone;
+        (window.navigator as any).standalone === true ||
+        document.cookie.includes('ml_pwa_standalone=true');
 
       if (isStandalone) {
         document.cookie = 'ml_pwa_standalone=true; path=/; max-age=31536000; SameSite=Lax';
-        router.replace('/menu');
+        router.replace('/login');
+        return;
+      }
+
+      const isMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(navigator.userAgent) ||
+        (navigator as any).userAgentData?.mobile;
+
+      if (isMobile) {
+        router.replace('/login');
       }
     }
   }, [router]);
+
 
   return (
     <div className="min-h-screen w-full bg-[#F0F0F0] flex items-center justify-center p-4">

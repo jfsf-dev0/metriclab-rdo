@@ -16,6 +16,23 @@ export function PwaManager() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // 0. Guarda cliente: Bloqueio imediato de Desktop em todas as telas
+    if (window.location.pathname !== '/desktop-blocked') {
+      const isStandaloneMode =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true ||
+        document.cookie.includes('ml_pwa_standalone=true');
+
+      const isMobileDevice =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(navigator.userAgent) ||
+        (navigator as any).userAgentData?.mobile;
+
+      if (!isMobileDevice && !isStandaloneMode) {
+        window.location.replace('/desktop-blocked');
+        return;
+      }
+    }
+
     // 1. Registra o Service Worker
     registerServiceWorker();
 
