@@ -250,5 +250,26 @@ Executadas com sucesso via PostgreSQL direto:
 - **Validação**:
   - Build de produção (`next build`) executado e validado com sucesso (código de saída 0).
 
+---
+
+### Auditoria Visual Pré-Demo — Captura Automatizada de Screenshots (Playwright)
+- **Data**: 11 de Setembro de 2026
+- **Objetivo**: Capturar screenshots em alta fidelidade de todas as telas acessíveis do PWA Relatório Diário de Obra (`rdo.metriclab.com.br`) em viewports Mobile (`390x844` — iPhone 14) e Desktop (`1440x900` com bypass `ml_pwa_standalone=true`) para auditoria visual antes da demonstração executiva.
+- **Implementação Técnica**:
+  - Script Playwright automatizado em `/Users/joaofreire/metriclab/scripts/screenshot-audit.mjs`.
+  - Tratamento de autenticação via sessão ativa (`ml_rdo_session` e `sessionStorage`), simulador de etapas de login (Etapa 1 identificador e Etapa 3 código de bypass demo `123456`).
+  - Supressão de banners intrusivos de instalação PWA via flag de persistência `ml_pwa_install_banner_dismissed` para registro limpo dos layouts.
+  - Screenshots capturados:
+    1. `01-splash.png`: Splash screen com display "Relatório Diário de Obra" e botão Entrar.
+    2. `02-login.png`: Tela de login na Etapa 1 com input de telefone/email.
+    3. `03-login-codigo.png`: Tela de login na Etapa 3 com campo de 6 dígitos preenchido (`123456`).
+    4. `04-menu.png`: Menu principal com identificação do encarregado, trecho e atalhos rápidos.
+    5. `05-rdo-novo.png`: Formulário de registro diário de obra (condições climáticas, equipe e equipamentos).
+    6. `06-rdo-detalhes.png`: Visualização completa de RDO submetido com equipe, máquinas e fotos.
+    7. `07-rdo-confirmacao.png`: Tela de confirmação e disparo de notificação para supervisão via WhatsApp.
+    8. `08-ocorrencia.png`: Formulário de registro de ocorrência de campo (tipos e criticidade).
+    9. `09-desktop-blocked.png`: Tela de bloqueio desktop com QR Code.
+  - Gerado painel HTML comparativo lado a lado em `screenshots/index.html`.
+
 
 

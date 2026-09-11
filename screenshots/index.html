@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoria Visual — PWAs Vistoria & RDO · MetricLab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --canvas: #F7F7F5;
+      --surface: #FFFFFF;
+      --hairline: #E5E5E3;
+      --ink: #111111;
+      --graphite: #6B6B6B;
+      --stone: #9B9B9B;
+      --accent: #F5A623;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--canvas);
+      color: var(--ink);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px;
+    }
+
+    /* Top Bar */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(247, 247, 245, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--hairline);
+      padding: 16px 24px;
+    }
+
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-logo span {
+      color: var(--accent);
+    }
+
+    .brand-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--hairline);
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--stone);
+      display: block;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .pill-group {
+      display: inline-flex;
+      background: #EFEFED;
+      padding: 3px;
+      border-radius: 8px;
+    }
+
+    .pill-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--graphite);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .pill-btn.active {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Container */
+    main {
+      max-width: 1400px;
+      margin: 32px auto 0;
+      padding: 0 24px;
+    }
+
+    .section-header {
+      margin-bottom: 24px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--hairline);
+      padding-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+
+    .section-badge {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--stone);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Cards Grid */
+    .cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+      margin-bottom: 56px;
+    }
+
+    .screen-card {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .card-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: #111111;
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .card-tags {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tag {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .tag-route {
+      background: #F0F0EE;
+      color: var(--graphite);
+      font-family: monospace;
+      text-transform: none;
+    }
+
+    .tag-auth {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .tag-public {
+      background: #EDE7F6;
+      color: #512DA8;
+    }
+
+    .tag-blocked {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    /* Comparison Row */
+    .comparison-row {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 28px;
+      align-items: flex-start;
+    }
+
+    body.view-mobile-only .comparison-row {
+      grid-template-columns: 390px;
+      justify-content: center;
+    }
+
+    body.view-mobile-only .desktop-column {
+      display: none;
+    }
+
+    body.view-desktop-only .comparison-row {
+      grid-template-columns: 1fr;
+    }
+
+    body.view-desktop-only .mobile-column {
+      display: none;
+    }
+
+    .col-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--stone);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Mobile Frame */
+    .mobile-frame {
+      border: 6px solid #1C1C1E;
+      border-radius: 36px;
+      overflow: hidden;
+      background: #000000;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+      position: relative;
+    }
+
+    .mobile-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+      cursor: zoom-in;
+      transition: opacity 0.2s;
+    }
+
+    .mobile-frame img:hover {
+      opacity: 0.96;
+    }
+
+    /* Desktop Frame */
+    .desktop-frame {
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    }
+
+    .desktop-frame-bar {
+      height: 24px;
+      background: #F1F1EF;
+      border-bottom: 1px solid var(--hairline);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 6px;
+    }
+
+    .bar-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #D1D1CF;
+    }
+
+    .desktop-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+      cursor: zoom-in;
+      transition: opacity 0.2s;
+    }
+
+    .desktop-frame img:hover {
+      opacity: 0.96;
+    }
+
+    /* Lightbox Modal */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .lightbox.active {
+      display: flex;
+    }
+
+    .lightbox-content {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 8px;
+      overflow: auto;
+      position: relative;
+    }
+
+    .lightbox-img {
+      max-width: 100%;
+      max-height: 85vh;
+      display: block;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: -36px;
+      right: 0;
+      color: #FFFFFF;
+      font-size: 28px;
+      font-weight: 300;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .comparison-row {
+        grid-template-columns: 1fr;
+      }
+      .mobile-frame {
+        max-width: 340px;
+        margin: 0 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-logo">m<span>.</span></div>
+        <div class="brand-divider"></div>
+        <div>
+          <span class="brand-title">Auditoria Visual — PWAs Vistoria & RDO</span>
+          <span class="brand-sub">Consórcio Pacote 15 e 19 · Revisão Pré-Demo</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <!-- App Filter -->
+        <div class="pill-group" id="appFilter">
+          <button class="pill-btn active" data-app="all">Todas as Telas</button>
+          <button class="pill-btn" data-app="vistoria">Vistoria (9)</button>
+          <button class="pill-btn" data-app="rdo">RDO (9)</button>
+        </div>
+
+        <!-- Viewport Mode -->
+        <div class="pill-group" id="viewMode">
+          <button class="pill-btn active" data-view="both">Lado a Lado</button>
+          <button class="pill-btn" data-view="mobile">Mobile</button>
+          <button class="pill-btn" data-view="desktop">Desktop</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- SECTION 1: VISTORIA CAUTELAR -->
+    <section id="section-vistoria" class="app-section" data-app="vistoria">
+      <div class="section-header">
+        <h2 class="section-title">Vistoria Cautelar</h2>
+        <span class="section-badge">vistoria.metriclab.com.br</span>
+      </div>
+
+      <div class="cards-list">
+        <!-- 01. Splash -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">01</span>
+              <h3 class="card-title">Splash Screen</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/</span>
+              <span class="tag tag-public">Público</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="vistoria/mobile/01-splash.png" alt="Vistoria Splash Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="vistoria/desktop/01-splash.png" alt="Vistoria Splash Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 02. Login Inicial -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">02</span>
+              <h3 class="card-title">Login — Identificador (Etapa 1)</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/login</span>
+              <span class="tag tag-public">Público</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="vistoria/mobile/02-login.png" alt="Vistoria Login Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="vistoria/desktop/02-login.png" alt="Vistoria Login Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 03. Login Código -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">03</span>
+              <h3 class="card-title">Login — Código Demo 123456 (Etapa 3)</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/login</span>
+              <span class="tag tag-public">Público</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="vistoria/mobile/03-login-codigo.png" alt="Vistoria Login Codigo Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="vistoria/desktop/03-login-codigo.png" alt="Vistoria Login Codigo Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 04. Home Feed -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">04</span>
+              <h3 class="card-title">Feed de Campo & Dashboard</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/home</span>
+              <span class="tag tag-auth">Autenticado</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="vistoria/mobile/04-home.png" alt="Vistoria Home Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="vistoria/desktop/04-home.png" alt="Vistoria Home Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 05. Nova Vistoria Passo 1 -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">05</span>
+              <h3 class="card-title">Nova Vistoria — Identificação do Imóvel</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/vistoria/novo</span>
+              <span class="tag tag-auth">Autenticado</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>Passo 1 de 5</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="vistoria/mobile/05-vistoria-novo-passo1.png" alt="Vistoria Novo Passo 1 Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="vistoria/desktop/05-vistoria-novo-passo1.png" alt="Vistoria Novo Passo 1 Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 06. Nova Vistoria Passo 2 -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">06</span>
+              <h3 class="card-title">Nova Vistoria — Checklist de 6 Perguntas</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/vistoria/novo</span>
+              <span class="tag tag-auth">Autenticado</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>Passo 2 de 5</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="vistoria/mobile/06-vistoria-novo-passo2.png" alt="Vistoria Novo Passo 2 Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="vistoria/desktop/06-vistoria-novo-passo2.png" alt="Vistoria Novo Passo 2 Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 07. Status Vistoria -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">07</span>
+              <h3 class="card-title">Status do Laudo Pericial — Aprovada 94/100</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/vistoria/[id]/status</span>
+              <span class="tag tag-auth">Autenticado</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="vistoria/mobile/07-vistoria-status.png" alt="Vistoria Status Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="vistoria/desktop/07-vistoria-status.png" alt="Vistoria Status Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 08. Ocorrência Bridge -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">08</span>
+              <h3 class="card-title">Registro de Ocorrência</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/ocorrencia</span>
+              <span class="tag tag-auth">Autenticado</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="vistoria/mobile/08-ocorrencia.png" alt="Vistoria Ocorrencia Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="vistoria/desktop/08-ocorrencia.png" alt="Vistoria Ocorrencia Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 09. Desktop Blocked -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">09</span>
+              <h3 class="card-title">Dispositivo Não Suportado (QR Code)</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/desktop-blocked</span>
+              <span class="tag tag-blocked">Bloqueio Ativo</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>Visão Mobile</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="vistoria/mobile/09-desktop-blocked.png" alt="Vistoria Desktop Blocked Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Tela de Bloqueio Real</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="vistoria/desktop/09-desktop-blocked.png" alt="Vistoria Desktop Blocked Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: RDO CAMPO -->
+    <section id="section-rdo" class="app-section" data-app="rdo">
+      <div class="section-header">
+        <h2 class="section-title">Relatório Diário de Obra (RDO)</h2>
+        <span class="section-badge">rdo.metriclab.com.br</span>
+      </div>
+
+      <div class="cards-list">
+        <!-- 01. Splash -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">01</span>
+              <h3 class="card-title">Splash Screen</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/</span>
+              <span class="tag tag-public">Público</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="rdo/mobile/01-splash.png" alt="RDO Splash Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="rdo/desktop/01-splash.png" alt="RDO Splash Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 02. Login -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">02</span>
+              <h3 class="card-title">Login — Identificador (Etapa 1)</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/login</span>
+              <span class="tag tag-public">Público</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="rdo/mobile/02-login.png" alt="RDO Login Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="rdo/desktop/02-login.png" alt="RDO Login Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 03. Login Codigo -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">03</span>
+              <h3 class="card-title">Login — Código Demo 123456 (Etapa 3)</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/login</span>
+              <span class="tag tag-public">Público</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="rdo/mobile/03-login-codigo.png" alt="RDO Login Codigo Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="rdo/desktop/03-login-codigo.png" alt="RDO Login Codigo Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 04. Menu -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">04</span>
+              <h3 class="card-title">Menu Principal & Ações</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/menu</span>
+              <span class="tag tag-auth">Autenticado</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="rdo/mobile/04-menu.png" alt="RDO Menu Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="rdo/desktop/04-menu.png" alt="RDO Menu Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 05. Novo RDO -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">05</span>
+              <h3 class="card-title">Novo Relatório Diário de Campo</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/rdo/novo</span>
+              <span class="tag tag-auth">Autenticado</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="rdo/mobile/05-rdo-novo.png" alt="RDO Novo Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="rdo/desktop/05-rdo-novo.png" alt="RDO Novo Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 06. Visualizar RDO -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">06</span>
+              <h3 class="card-title">Detalhe do RDO Enviado</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/rdo/[id]</span>
+              <span class="tag tag-auth">Autenticado</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="rdo/mobile/06-rdo-detalhes.png" alt="RDO Detalhes Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="rdo/desktop/06-rdo-detalhes.png" alt="RDO Detalhes Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 07. Confirmação RDO -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">07</span>
+              <h3 class="card-title">Confirmação de Envio do RDO</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/rdo/[id]/confirmacao</span>
+              <span class="tag tag-auth">Autenticado</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="rdo/mobile/07-rdo-confirmacao.png" alt="RDO Confirmacao Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="rdo/desktop/07-rdo-confirmacao.png" alt="RDO Confirmacao Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 08. Ocorrência -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">08</span>
+              <h3 class="card-title">Registro de Ocorrência de Campo</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/ocorrencia</span>
+              <span class="tag tag-auth">Autenticado</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>iPhone 14</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="rdo/mobile/08-ocorrencia.png" alt="RDO Ocorrencia Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Standalone Bypass</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="rdo/desktop/08-ocorrencia.png" alt="RDO Ocorrencia Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 09. Desktop Blocked -->
+        <div class="screen-card">
+          <div class="card-meta">
+            <div class="card-info">
+              <span class="card-num">09</span>
+              <h3 class="card-title">Dispositivo Não Suportado (QR Code)</h3>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-route">/desktop-blocked</span>
+              <span class="tag tag-blocked">Bloqueio Ativo</span>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="mobile-column">
+              <div class="col-header">
+                <span>Mobile (390 × 844)</span>
+                <span>Visão Mobile</span>
+              </div>
+              <div class="mobile-frame">
+                <img src="rdo/mobile/09-desktop-blocked.png" alt="RDO Desktop Blocked Mobile" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+            <div class="desktop-column">
+              <div class="col-header">
+                <span>Desktop (1440 × 900)</span>
+                <span>Tela de Bloqueio Real</span>
+              </div>
+              <div class="desktop-frame">
+                <div class="desktop-frame-bar">
+                  <div class="bar-dot"></div><div class="bar-dot"></div><div class="bar-dot"></div>
+                </div>
+                <img src="rdo/desktop/09-desktop-blocked.png" alt="RDO Desktop Blocked Desktop" loading="lazy" onclick="openLightbox(this.src)">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Lightbox Modal -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <div class="lightbox-content" onclick="event.stopPropagation()">
+      <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+      <img id="lightboxImg" class="lightbox-img" src="" alt="Ampliação">
+    </div>
+  </div>
+
+  <script>
+    // App Filter
+    const appFilterBtns = document.querySelectorAll('#appFilter .pill-btn');
+    const sections = document.querySelectorAll('.app-section');
+
+    appFilterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        appFilterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const app = btn.getAttribute('data-app');
+        sections.forEach(sec => {
+          if (app === 'all' || sec.getAttribute('data-app') === app) {
+            sec.style.display = 'block';
+          } else {
+            sec.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Viewport Filter
+    const viewBtns = document.querySelectorAll('#viewMode .pill-btn');
+    viewBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        viewBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const mode = btn.getAttribute('data-view');
+        document.body.classList.remove('view-mobile-only', 'view-desktop-only');
+        if (mode === 'mobile') {
+          document.body.classList.add('view-mobile-only');
+        } else if (mode === 'desktop') {
+          document.body.classList.add('view-desktop-only');
+        }
+      });
+    });
+
+    // Lightbox
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+
+    function openLightbox(src) {
+      lightboxImg.src = src;
+      lightbox.classList.add('active');
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+  </script>
+</body>
+</html>
