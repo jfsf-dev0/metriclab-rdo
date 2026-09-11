@@ -147,5 +147,20 @@ Executadas com sucesso via PostgreSQL direto:
   - `PwaManager.tsx`: Adicionada proteção dupla no cliente (hydration guard) para redirecionar instantaneamente para `/desktop-blocked` caso ocorra renderização em navegador desktop sem modo standalone.
   - `app/desktop-blocked/page.tsx`: Se acessado por dispositivo móvel, redireciona automaticamente para `/login`; se em modo standalone no computador, redireciona para `/login`.
 
+---
+
+### Redesenho da Página /desktop-blocked (Tela Completa & QR Code Funcional)
+- **Layout Desktop Tela Completa**:
+  - Removido formato de "card mobile" centralizado; implementado layout desktop completo, imersivo e profissional no Design System MetricLab 2.0.
+  - Header superior institucional com logo `m.`, divisor vertical, nome do produto e badge "Acesso Exclusivo Mobile".
+  - Grid de 2 colunas:
+    - **Coluna Esquerda**: Eyebrow "Dispositivo Não Suportado", título "Este sistema é exclusivo para acesso mobile. Acesse pelo seu celular.", contexto sobre controle de frentes de obra e 3 cards de recursos (Lançamento Diário, Ocorrências, Modo Offline), além de botão para copiar o link.
+    - **Coluna Direita**: Card de destaque com QR Code real em alta definição.
+- **QR Code Real & Funcional**:
+  - Integração da biblioteca `qrcode` para renderização de QR Code escaneável codificando `https://rdo.metriclab.com.br`.
+  - Fallback vetorial SVG instantâneo.
+- **Limpeza de Texto**:
+  - Removida completamente a frase "Se você instalou o app como PWA no seu computador, abra-o pela janela do aplicativo instalado para liberar o acesso.".
+
 
 
