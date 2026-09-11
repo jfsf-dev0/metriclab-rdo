@@ -13,6 +13,7 @@ export function middleware(request: NextRequest) {
     pathname === '/sw.js' ||
     pathname === '/manifest.json' ||
     pathname === '/og-image.jpg' ||
+    pathname === '/og-preview.jpg' ||
     /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf)$/i.test(pathname)
   ) {
     if (

@@ -225,6 +225,8 @@ Executadas com sucesso via PostgreSQL direto:
     - Adicionado bypass explícito no `middleware.ts` para robôs de preview social (`WhatsApp`, `facebookexternalhit`, `Facebot`, `Twitterbot`, `LinkedInBot`, `TelegramBot`, `Slackbot`, `meta-externalagent`, `Googlebot`, etc.).
     - Configurado `app/page.tsx` para renderizar diretamente a tela de acesso sem redirecionamento 307 no root `/`, retornando HTTP 200 diretamente para os scrapers.
     - Adicionadas tags `og:image:secure_url`, `og:image:type`, `og:image:width`, `og:image:height` e `og:image:alt` para enriquecimento do card.
+    - Criado asset dedicado `public/og-preview.jpg` para quebra de cache prévio em proxies e CDNs de mensageiros (WhatsApp/Meta).
 - **Validação**:
   - Compilação e build Next.js 14 executados com sucesso (código 0).
+
 

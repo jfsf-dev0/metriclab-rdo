@@ -25,6 +25,11 @@ export const metadata: Metadata = {
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'RDO Digital',
+  },
   openGraph: {
     title: 'RDO Digital · MetricLab',
     description: 'Diário de obra preenchido em campo e consolidado automaticamente no painel do supervisor. Acesse pelo celular.',
@@ -32,8 +37,8 @@ export const metadata: Metadata = {
     siteName: 'MetricLab',
     images: [
       {
-        url: 'https://rdo.metriclab.com.br/og-image.jpg',
-        secureUrl: 'https://rdo.metriclab.com.br/og-image.jpg',
+        url: 'https://rdo.metriclab.com.br/og-preview.jpg',
+        secureUrl: 'https://rdo.metriclab.com.br/og-preview.jpg',
         width: 1200,
         height: 630,
         alt: 'RDO Digital · MetricLab',
@@ -46,7 +51,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'RDO Digital · MetricLab',
     description: 'Diário de obra preenchido em campo e consolidado automaticamente no painel do supervisor.',
-    images: ['https://rdo.metriclab.com.br/og-image.jpg'],
+    images: ['https://rdo.metriclab.com.br/og-preview.jpg'],
   },
 };
 
@@ -71,8 +76,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta property="og:title" content="RDO Digital · MetricLab" />
         <meta property="og:description" content="Diário de obra preenchido em campo e consolidado automaticamente no painel do supervisor. Acesse pelo celular." />
-        <meta property="og:image" content="https://rdo.metriclab.com.br/og-image.jpg" />
-        <meta property="og:image:secure_url" content="https://rdo.metriclab.com.br/og-image.jpg" />
+        <meta property="og:image" content="https://rdo.metriclab.com.br/og-preview.jpg" />
+        <meta property="og:image:secure_url" content="https://rdo.metriclab.com.br/og-preview.jpg" />
         <meta property="og:image:type" content="image/jpeg" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
@@ -83,7 +88,7 @@ export default function RootLayout({
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="RDO Digital · MetricLab" />
         <meta name="twitter:description" content="Diário de obra preenchido em campo e consolidado automaticamente no painel do supervisor." />
-        <meta name="twitter:image" content="https://rdo.metriclab.com.br/og-image.jpg" />
+        <meta name="twitter:image" content="https://rdo.metriclab.com.br/og-preview.jpg" />
       </head>
       <body className={`${inter.className} min-h-screen bg-[#F0F0F0] text-[#111111] antialiased flex flex-col w-full selection:bg-neutral-200 selection:text-neutral-900`}>
         <ToastProvider>
