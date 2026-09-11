@@ -3,8 +3,10 @@
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
+import { useDesktopBlock } from '@/hooks/useDesktopBlock';
 
 export default function ConfirmacaoPage() {
+  useDesktopBlock();
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;

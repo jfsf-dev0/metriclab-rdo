@@ -7,8 +7,10 @@ import { RDOSession, RDORegistro } from '@/types/rdo';
 import { getSession, clearSession } from '@/lib/auth';
 import { MetricLabLogo } from '@/components/brand/MetricLabLogo';
 import { ChevronRight } from 'lucide-react';
+import { useDesktopBlock } from '@/hooks/useDesktopBlock';
 
 export default function MenuPage() {
+  useDesktopBlock();
   const router = useRouter();
   const [session, setSession] = useState<RDOSession | null>(null);
   const [hojeRDO, setHojeRDO] = useState<RDORegistro | null>(null);

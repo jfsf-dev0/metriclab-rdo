@@ -271,5 +271,46 @@ Executadas com sucesso via PostgreSQL direto:
     9. `09-desktop-blocked.png`: Tela de bloqueio desktop com QR Code.
   - Gerado painel HTML comparativo lado a lado em `screenshots/index.html`.
 
+---
+
+### Redesign Mobile UI — Design System MetricLab 2.0
+- **Data**: 11 de Setembro de 2026
+- **Objetivo**: Reestruturação integral da interface mobile do PWA Relatório Diário de Obra (RDO) conforme as especificações rígidas do MetricLab 2.0.
+- **Implementações**:
+  - `tailwind.config.ts` e `app/globals.css`: Tokens unificados de design system (`#F7F7F5`, `#FFFFFF`, `#E2E2DC`, `#111111`, `#6B7280`, `#9CA3AF`, `#DC2626`).
+  - Zero border radius em botões, inputs, cards e badges (`rounded-none`).
+  - Inputs com altura de 48px, borda 1px `#E2E2DC`, labels em 12px uppercase tracking `0.08em` `#6B7280`.
+  - Botões com 52px de altura, full-width, texto 15px Inter 600.
+  - HeaderMobile de 56px, fundo branco, borda inferior 1px `#E2E2DC`, título 18px Inter 600.
+  - Menu reformulado: identificação do encarregado, resumo do dia com status badge, cards largos para "Novo RDO", "Histórico" e "Registrar Ocorrência".
+  - Multi-step form com barra de progresso linear de 2px no topo, seleção de clima em botões planos (Manhã/Tarde), grid limpo de efetivo por categoria, status de máquinas, upload de fotos com aspecto 1:1 e botão fixo de 52px no rodapé.
+  - Tela de confirmação com resumo em grid de 2 colunas e dois botões de ação ("Ver RDO" e "Voltar ao início").
+
+---
+
+### Reforço Estrito de Bloqueio Desktop & Remoção de Bypass de Produção
+- **Data**: 11 de Setembro de 2026
+- **Objetivo**: Bloquear completamente o acesso desktop em todas as rotas (mesmo para usuários autenticados ou com sessão ativa) e eliminar qualquer contorno via localStorage ou standalone em produção.
+- **Implementações**:
+  - **Middleware (`middleware.ts`)**:
+    - Detecção antecipada por `User-Agent` e `Sec-CH-UA-Mobile`.
+    - Redirecionamento incondicional para `/desktop-blocked` para qualquer dispositivo desktop, independente de autenticação, sessão ou rota acessada.
+    - Exceção autorizada restrita ao header `x-playwright-audit === process.env.PLAYWRIGHT_SECRET`.
+    - Eliminação de bypass via `ml_pwa_standalone` em ambiente de produção.
+  - **Guard do Cliente (`hooks/useDesktopBlock.ts`)**:
+    - Hook client-side executado no `mount` e no evento `resize` da janela.
+    - Se `window.innerWidth > 768`, executa `router.replace('/desktop-blocked')` imediato, sem aviso ou delay.
+    - Aplicado no `HeaderMobile` e em todas as páginas autenticadas (`/menu`, `/rdo/novo`, `/rdo/[id]`, `/rdo/[id]/confirmacao`, `/ocorrencia`).
+  - **Tela `/desktop-blocked` Redesenhada**:
+    - Fundo `#F7F7F5`, centralização vertical e horizontal absoluta.
+    - Logotipo `m.` 32px no topo com ponto `#F5A623`.
+    - Título "Este aplicativo é exclusivo para dispositivos móveis" (Inter 600, 18px, `#111111`).
+    - Subtítulo "Acesse pelo seu celular para continuar." (Inter 400, 14px, `#9CA3AF`).
+    - QR Code centralizado em 160x160px para `https://rdo.metriclab.com.br`.
+    - Endereço web `rdo.metriclab.com.br` (Inter 400, 13px, `#9CA3AF`).
+    - Remoção de botões de cópia, links ou instruções supérfluas.
+  - **Variável de Ambiente**:
+    - Configurado `PLAYWRIGHT_SECRET=metriclab_audit_2026` em `.env.production` e `.env.local`.
+
 
 

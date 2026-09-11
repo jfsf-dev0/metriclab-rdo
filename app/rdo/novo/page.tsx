@@ -13,8 +13,10 @@ import {
 } from '@/types/rdo';
 import { getSession } from '@/lib/auth';
 import { Camera, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
+import { useDesktopBlock } from '@/hooks/useDesktopBlock';
 
 export default function NovoRDOPage() {
+  useDesktopBlock();
   const router = useRouter();
 
   const [session, setSession] = useState<RDOSession | null>(null);

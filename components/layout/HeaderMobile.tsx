@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { MetricLabLogo } from '@/components/brand/MetricLabLogo';
 import { cn } from '@/lib/utils';
+import { useDesktopBlock } from '@/hooks/useDesktopBlock';
 
 interface HeaderMobileProps {
   title?: string;
@@ -24,6 +25,7 @@ export function HeaderMobile({
   greeting,
   className,
 }: HeaderMobileProps) {
+  useDesktopBlock();
   const router = useRouter();
 
   const handleBack = () => {

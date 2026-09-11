@@ -29,7 +29,10 @@ const TIPOS: TipoOcorrencia[] = [
 
 const GRAVIDADES: Gravidade[] = ['Baixa', 'Média', 'Alta', 'Crítica'];
 
+import { useDesktopBlock } from '@/hooks/useDesktopBlock';
+
 export default function OcorrenciaPage() {
+  useDesktopBlock();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 

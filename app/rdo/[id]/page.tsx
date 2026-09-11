@@ -5,8 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { HeaderMobile } from '@/components/layout/HeaderMobile';
 import { supabase } from '@/lib/supabase';
 import { RDORegistro, EquipeMembro, MaquinaCheck } from '@/types/rdo';
+import { useDesktopBlock } from '@/hooks/useDesktopBlock';
 
 export default function VisualizarRDOPage() {
+  useDesktopBlock();
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
