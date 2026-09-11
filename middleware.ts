@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -16,63 +15,55 @@ export function middleware(request: NextRequest) {
     pathname === '/og-preview.jpg' ||
     /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf)$/i.test(pathname)
   ) {
-    if (
-      request.nextUrl.searchParams.get('mode') === 'standalone' ||
-      request.nextUrl.searchParams.get('display-mode') === 'standalone'
-    ) {
-      const response = NextResponse.next();
-      response.cookies.set('ml_pwa_standalone', 'true', {
-        path: '/',
-        maxAge: 60 * 60 * 24 * 365,
-        sameSite: 'lax',
-      });
-      return response;
-    }
     return NextResponse.next();
   }
 
-  // 2. Detecção de crawlers e robôs de redes sociais (WhatsApp, Facebook, Twitter, Telegram, etc.)
-  // para geração de cards de pré-visualização (Open Graph / Twitter Card)
+  // 2. Detecção de crawlers e robôs de redes sociais (WhatsApp, Facebook, etc.)
   const userAgent = request.headers.get('user-agent') || '';
   const isCrawler =
     /bot|crawler|spider|slurp|facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Slackbot|SkypeUriPreview|meta-externalagent|Googlebot|bingbot|Applebot/i.test(
       userAgent
     );
 
-  // Crawlers recebem a página diretamente para ler as meta tags Open Graph sem serem redirecionados
   if (isCrawler) {
     return NextResponse.next();
   }
 
-  // 3. Detecção de Mobile e PWA Standalone
+  // 3. Verificação de exceção de auditoria oficial (header x-playwright-audit)
+  const PLAYWRIGHT_SECRET = process.env.PLAYWRIGHT_SECRET || 'metriclab_audit_2026';
+  const auditHeader = request.headers.get('x-playwright-audit');
+  const isAuditBypass = auditHeader === PLAYWRIGHT_SECRET;
+
+  // 4. Detecção de mobile por User-Agent e Sec-CH-UA-Mobile
   const secChUaMobile = request.headers.get('sec-ch-ua-mobile');
   const isMobile =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(userAgent) ||
     secChUaMobile === '?1';
 
-  // Exceção: PWA instalado em modo standalone (display-mode: standalone)
-  const isStandalone =
-    request.cookies.get('ml_pwa_standalone')?.value === 'true' ||
+  // 5. Bypass de standalone (APENAS em development ou com secret de auditoria)
+  const isDev = process.env.NODE_ENV === 'development';
+  const hasStandaloneCookie = request.cookies.get('ml_pwa_standalone')?.value === 'true';
+  const hasStandaloneParam =
     request.nextUrl.searchParams.get('mode') === 'standalone' ||
     request.nextUrl.searchParams.get('display-mode') === 'standalone';
 
-  // 3. Bloqueio TOTAL de Desktop em TODAS as telas da aplicação (inclusive /login, /, /menu, /rdo, etc.)
-  if (!isMobile && !isStandalone) {
+  const isStandaloneAllowed = (isDev || isAuditBypass) && (hasStandaloneCookie || hasStandaloneParam);
+
+  // 6. BLOQUEIO DE DESKTOP — CAMADA MAIS EXTERNA
+  // Se desktop (não mobile, nem audit bypass, nem standalone em dev) → redirecionar para /desktop-blocked
+  // Independente de autenticação, sessão ou rota
+  if (!isMobile && !isAuditBypass && !isStandaloneAllowed) {
     const blockedUrl = new URL('/desktop-blocked', request.url);
     return NextResponse.redirect(blockedUrl);
   }
 
-  // 4. Ao acessar / ou /login: SEMPRE exige novo login ao abrir o PWA
+  // 7. Ao acessar / ou /login: limpa sessão residual
   if (pathname === '/login' || pathname === '/') {
     const response = NextResponse.next();
-    // Limpa qualquer cookie de sessão residual
     if (request.cookies.has('ml_rdo_session')) {
       response.cookies.delete('ml_rdo_session');
     }
-    if (
-      request.nextUrl.searchParams.get('mode') === 'standalone' ||
-      request.nextUrl.searchParams.get('display-mode') === 'standalone'
-    ) {
+    if (isStandaloneAllowed && hasStandaloneParam) {
       response.cookies.set('ml_pwa_standalone', 'true', {
         path: '/',
         maxAge: 60 * 60 * 24 * 365,
@@ -82,7 +73,7 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // 5. Proteção de autenticação para rotas internas
+  // 8. Proteção de autenticação para rotas internas
   const isProtectedRoute =
     pathname.startsWith('/menu') ||
     pathname.startsWith('/rdo') ||
@@ -97,12 +88,7 @@ export function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next();
-
-  // Se o request veio com ?mode=standalone, grava o cookie de sessão standalone
-  if (
-    request.nextUrl.searchParams.get('mode') === 'standalone' ||
-    request.nextUrl.searchParams.get('display-mode') === 'standalone'
-  ) {
+  if (isStandaloneAllowed && hasStandaloneParam) {
     response.cookies.set('ml_pwa_standalone', 'true', {
       path: '/',
       maxAge: 60 * 60 * 24 * 365,
@@ -118,4 +104,3 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico|sw.js|manifest.json).*)',
   ],
 };
-
