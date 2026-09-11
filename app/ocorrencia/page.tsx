@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { RDOSession } from '@/types/rdo';
 import { getSession } from '@/lib/auth';
-import { Camera, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 
 type TipoOcorrencia =
   | 'Acidente'
@@ -118,68 +118,61 @@ export default function OcorrenciaPage() {
           .getPublicUrl(fileName);
         setFotos((prev) => [...prev, data.publicUrl]);
       }
+    } catch {
+      // ignore
     } finally {
       setUploadingFoto(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleRemoveFoto = (index: number) => {
-    setFotos((prev) => prev.filter((_, i) => i !== index));
+  const handleRemoveFoto = (idx: number) => {
+    setFotos((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!descricao.trim()) {
-      setErro('Descreva o que aconteceu na ocorrência.');
+      setErro('Informe a descrição da ocorrência.');
       return;
     }
 
-    if (!session) return;
     setSubmitting(true);
     setErro(null);
 
-    const gravidadeApi =
-      gravidade === 'Crítica'
-        ? 'critica'
-        : gravidade === 'Média'
-        ? 'media'
-        : (gravidade.toLowerCase() as any);
-
-    const tipoApi = tipo.toLowerCase().replace(/ /g, '_');
-
     try {
-      const { error: insertError } = await supabase
+      const { data: newOc, error: ocError } = await supabase
         .from('demo_rdo_ocorrencias')
         .insert({
-          usuario_id: session.usuario_id,
-          trecho_id: session.trecho_id || 'd301f2ac-0a56-43f1-8f24-5d5d67683935',
+          usuario_id: session?.usuario_id,
+          trecho_id: session?.trecho_id || 'd301f2ac-0a56-43f1-8f24-5d5d67683935',
           data: new Date().toISOString().split('T')[0],
-          tipo: tipoApi,
+          tipo,
+          gravidade,
           descricao: descricao.trim(),
-          gravidade: gravidadeApi,
           fotos,
-          geolat,
-          geolng,
-          status: 'aberta',
-        });
+          geolat: geolat || -23.5505,
+          geolng: geolng || -46.6333,
+          resolvido: false,
+        })
+        .select()
+        .single();
 
-      if (insertError) throw insertError;
+      if (ocError) throw ocError;
 
-      // Webhook
+      // Webhook notification
       try {
-        fetch('https://n8n.metriclab.com.br/webhook/rdo-ocorrencia', {
+        fetch('https://n8n.metriclab.com.br/webhook/ocorrencia-registrada', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            usuario_nome: session.nome,
-            trecho_nome: session.trecho_nome,
+            ocorrencia_id: newOc?.id,
+            usuario_nome: session?.nome,
+            trecho_nome: session?.trecho_nome,
             tipo,
             gravidade,
             descricao,
-            fotos,
-            geolat,
-            geolng,
+            fotos_qtd: fotos.length,
           }),
         });
       } catch (_) {}
@@ -192,195 +185,188 @@ export default function OcorrenciaPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col justify-between">
-      {/* Header: "← Voltar" | "Nova Ocorrência" */}
-      <header className="h-[52px] bg-[#F7F7F5] border-b border-[#E5E5E3] px-6 flex items-center justify-between">
+    <main className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col justify-between font-sans">
+      {/* Header Mobile: 56px, bg white, border #E2E2DC */}
+      <header className="h-[56px] bg-white border-b border-[#E2E2DC] px-4 flex items-center justify-between sticky top-0 z-20 select-none">
         <button
+          type="button"
           onClick={() => router.push('/menu')}
-          className="text-[14px] text-[#111111] hover:underline"
+          className="min-w-[44px] min-h-[44px] flex items-center text-[14px] font-medium text-[#111111] hover:opacity-80 transition-opacity"
         >
           ← Voltar
         </button>
-        <span className="text-[16px] font-normal text-[#111111]">
+        <h1 className="text-[18px] font-semibold text-[#111111] tracking-[-0.3px] truncate px-2">
           Nova Ocorrência
-        </span>
-        <div className="w-12" />
+        </h1>
+        <div className="min-w-[44px] min-h-[44px]" />
       </header>
 
-      {/* Padding 24px */}
-      <div className="flex-1 max-w-md w-full mx-auto p-6">
+      {/* Conteúdo do Formulário */}
+      <div className="flex-1 max-w-md w-full mx-auto px-4 py-6 pb-32 space-y-6">
         {erro && (
-          <div className="mb-6 text-[13px] text-[#111111] border-b border-[#111111] pb-2">
+          <div className="p-4 bg-white border border-[#DC2626] text-[13px] text-[#DC2626]">
             {erro}
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          {/* TIPO DE OCORRÊNCIA — eyebrow */}
-          <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
-            TIPO DE OCORRÊNCIA
-          </span>
-
-          <div className="divide-y divide-[#E5E5E3] border-t border-[#E5E5E3]">
-            {TIPOS.map((t) => {
-              const isSelected = tipo === t;
-              return (
-                <div
-                  key={t}
-                  onClick={() => setTipo(t)}
-                  className="py-3.5 flex items-center justify-between cursor-pointer select-none"
-                >
-                  <span
-                    className={`text-[20px] ${
-                      isSelected ? 'font-medium text-[#111111]' : 'font-normal text-[#111111]'
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Tipo de Ocorrência */}
+          <div>
+            <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-2">
+              TIPO DE OCORRÊNCIA
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {TIPOS.map((t) => {
+                const active = tipo === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTipo(t)}
+                    className={`h-[44px] px-3 text-[14px] font-medium rounded-none border transition-colors cursor-pointer text-left flex items-center justify-between ${
+                      active
+                        ? 'bg-[#111111] text-white border-[#111111]'
+                        : 'bg-white text-[#111111] border-[#E2E2DC]'
                     }`}
                   >
-                    {t}
-                  </span>
-                  {isSelected ? (
-                    <ChevronDown className="w-5 h-5 text-[#111111]" />
-                  ) : (
-                    <ChevronRight className="w-5 h-5 text-[#C4C4C2]" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="w-full border-b border-[#E5E5E3] my-8" />
-
-          {/* GRAVIDADE — eyebrow */}
-          <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-3">
-            GRAVIDADE
-          </span>
-
-          <div className="grid grid-cols-4 gap-2">
-            {GRAVIDADES.map((g) => {
-              const active = gravidade === g;
-              return (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setGravidade(g)}
-                  className={`py-2 text-[14px] font-normal rounded-[4px] border transition-colors ${
-                    active
-                      ? 'bg-[#111111] text-white border-[#111111]'
-                      : 'border-[#E5E5E3] text-[#111111]'
-                  }`}
-                >
-                  {g}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="w-full border-b border-[#E5E5E3] my-8" />
-
-          {/* DESCRIÇÃO — eyebrow */}
-          <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
-            DESCRIÇÃO
-          </span>
-          <textarea
-            rows={5}
-            required
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-            placeholder="Descreva o que aconteceu..."
-            className="w-full bg-transparent border-0 border-b border-[#E5E5E3] focus:border-[#111111] py-3 text-[16px] text-[#111111] placeholder:text-[#9B9B9B] outline-none rounded-none resize-none transition-colors"
-          />
-
-          <div className="w-full border-b border-[#E5E5E3] my-8" />
-
-          {/* FOTOS — eyebrow */}
-          <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-3">
-            FOTOS
-          </span>
-
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="hidden"
-          />
-
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="border border-dashed border-[#E5E5E3] rounded-none py-10 px-6 bg-[#F7F7F5] flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-3"
-          >
-            {uploadingFoto ? (
-              <Loader2 className="w-5 h-5 text-[#9B9B9B] animate-spin mb-2" />
-            ) : (
-              <Camera className="w-5 h-5 text-[#9B9B9B] mb-2" />
-            )}
-            <span className="text-[14px] font-normal text-[#6B6B6B]">
-              {uploadingFoto ? 'Enviando...' : 'Adicionar foto'}
-            </span>
-          </div>
-
-          {fotos.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {fotos.map((f, idx) => (
-                <div
-                  key={idx}
-                  className="relative aspect-video bg-[#EFEFED] rounded-[4px] overflow-hidden border border-[#E5E5E3]"
-                >
-                  <img
-                    src={f}
-                    alt={`Foto ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFoto(idx)}
-                    className="absolute top-1 right-1 bg-black/60 text-[#9B9B9B] hover:text-white text-[12px] w-6 h-6 rounded-full flex items-center justify-center"
-                  >
-                    ×
+                    <span>{t}</span>
+                    {active && <span className="text-[12px]">●</span>}
                   </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          )}
+          </div>
 
-          <div className="w-full border-b border-[#E5E5E3] my-8" />
+          {/* Gravidade */}
+          <div>
+            <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-2">
+              GRAVIDADE
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {GRAVIDADES.map((g) => {
+                const active = gravidade === g;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setGravidade(g)}
+                    className={`h-[44px] text-[13px] font-medium rounded-none border transition-colors cursor-pointer ${
+                      active
+                        ? 'bg-[#111111] text-white border-[#111111]'
+                        : 'bg-white text-[#111111] border-[#E2E2DC]'
+                    }`}
+                  >
+                    {g}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-          {/* LOCALIZAÇÃO — eyebrow */}
-          <div className="mb-10">
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
-              LOCALIZAÇÃO
+          {/* Descrição */}
+          <div>
+            <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-2">
+              DESCRIÇÃO DOS FATOS *
+            </label>
+            <textarea
+              rows={5}
+              required
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Relate detalhadamente o ocorrido, pessoas envolvidas e ações preliminares tomadas..."
+              className="w-full p-4 bg-white border border-[#E2E2DC] rounded-none text-[15px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-[#111111] focus:outline-none resize-none transition-colors"
+            />
+          </div>
+
+          {/* Fotos */}
+          <div>
+            <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-2">
+              REGISTROS FOTOGRÁFICOS
+            </label>
+
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="border border-dashed border-[#E2E2DC] rounded-none p-6 bg-white flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-3"
+            >
+              {uploadingFoto ? (
+                <Loader2 className="w-5 h-5 text-[#6B7280] animate-spin mb-2" />
+              ) : (
+                <Camera className="w-5 h-5 text-[#6B7280] mb-2 stroke-[1.5]" />
+              )}
+              <span className="text-[13px] font-medium text-[#6B7280]">
+                {uploadingFoto ? 'Enviando...' : 'Fotografar ou anexar evidências'}
+              </span>
+            </div>
+
+            {fotos.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {fotos.map((f, idx) => (
+                  <div
+                    key={idx}
+                    className="relative aspect-square bg-[#F7F7F5] border border-[#E2E2DC] rounded-none overflow-hidden"
+                  >
+                    <img
+                      src={f}
+                      alt={`Foto ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFoto(idx)}
+                      className="absolute top-1 right-1 bg-black/70 text-white text-[12px] w-5 h-5 flex items-center justify-center cursor-pointer hover:bg-black"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Localização */}
+          <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-1">
+            <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+              LOCALIZAÇÃO DA OCORRÊNCIA
             </span>
             {gpsLoading ? (
-              <p className="text-[13px] font-normal text-[#9B9B9B]">
-                Capturando GPS...
-              </p>
+              <p className="text-[13px] text-[#9CA3AF]">Obtendo coordenadas GPS...</p>
             ) : geolat && geolng ? (
-              <p className="text-[13px] font-normal text-[#9B9B9B]">
+              <p className="text-[14px] text-[#111111]">
                 Lat: {geolat} · Lng: {geolng}
               </p>
             ) : (
               <button
                 type="button"
                 onClick={capturarGPS}
-                className="text-[14px] text-[#111111] hover:underline"
+                className="text-[13px] font-medium text-[#111111] underline cursor-pointer"
               >
-                Capturar localização
+                Capturar GPS
               </button>
             )}
           </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full h-12 bg-[#111111] hover:bg-black disabled:opacity-40 text-white text-[14px] font-medium rounded-[6px] transition-colors flex items-center justify-center cursor-pointer"
-          >
-            {submitting ? 'Registrando...' : 'Registrar Ocorrência'}
-          </button>
+          {/* Botão Fixo no Rodapé */}
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#F7F7F5] border-t border-[#E2E2DC] z-30">
+            <div className="max-w-md mx-auto">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-none transition-opacity flex items-center justify-center cursor-pointer disabled:opacity-40"
+              >
+                {submitting ? 'Registrando ocorrência...' : 'Registrar Ocorrência'}
+              </button>
+            </div>
+          </div>
         </form>
       </div>
-
-      <footer className="w-full text-center py-4 text-[11px] text-[#9B9B9B] border-t border-[#E5E5E3]">
-        MetricLab · Pacote 15 e 19
-      </footer>
     </main>
   );
 }

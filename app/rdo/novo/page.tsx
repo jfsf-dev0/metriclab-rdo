@@ -18,35 +18,42 @@ export default function NovoRDOPage() {
   const router = useRouter();
 
   const [session, setSession] = useState<RDOSession | null>(null);
-  const [passo, setPasso] = useState<number>(1);
+  const [passo, setPasso] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [loadingInitial, setLoadingInitial] = useState(true);
 
   // PASSO 1: Identificação & Clima
   const [turno, setTurno] = useState<'manha' | 'tarde' | 'noite'>('manha');
+  const [climaManha, setClimaManha] = useState<'bom' | 'nublado' | 'chuva'>('bom');
+  const [climaTarde, setClimaTarde] = useState<'bom' | 'nublado' | 'chuva'>('nublado');
   const [geolat, setGeolat] = useState<number>(-23.5505);
   const [geolng, setGeolng] = useState<number>(-46.6333);
 
-  // PASSO 2: Equipe
+  // PASSO 2: Efetivo (Categorias com inputs de quantidade + membros)
+  const [efetivoCategorias, setEfetivoCategorias] = useState<Record<string, number>>({
+    'Encarregados': 1,
+    'Operadores de Máquinas': 2,
+    'Motoristas': 2,
+    'Ajudantes / Serventes': 4,
+    'Técnicos de Segurança': 1,
+  });
   const [equipe, setEquipe] = useState<EquipeMembro[]>([
     { nome: 'Carlos Eduardo', funcao: 'Operador de Escavadeira', presente: true },
     { nome: 'Roberto Alves', funcao: 'Motorista Basculante', presente: true },
     { nome: 'Marcos Vinicius', funcao: 'Ajudante Especializado', presente: true },
   ]);
-  const [openMembroIdx, setOpenMembroIdx] = useState<number | null>(null);
   const [uploadingCracha, setUploadingCracha] = useState(false);
   const crachaInputRef = useRef<HTMLInputElement>(null);
 
-  // PASSO 3: Máquinas
+  // PASSO 3: Equipamentos
   const [catalogoMaquinas, setCatalogoMaquinas] = useState<MaquinaCatalogo[]>([]);
   const [maquinasCheck, setMaquinasCheck] = useState<
     Record<string, { status: MaquinaCheck['status']; observacao: string }>
   >({});
-  const [openMaquinaId, setOpenMaquinaId] = useState<string | null>(null);
 
-  // PASSO 4: Fotos & Atividades
+  // PASSO 4: Atividades & Fotos
+  const [atividades, setAtividades] = useState('');
   const [fotosDia, setFotosDia] = useState<string[]>([]);
   const [uploadingFotoDia, setUploadingFotoDia] = useState(false);
-  const [atividades, setAtividades] = useState('');
   const fotosInputRef = useRef<HTMLInputElement>(null);
 
   // PASSO 5: Assinatura
@@ -114,7 +121,7 @@ export default function NovoRDOPage() {
     }
   }, [router]);
 
-  // Canvas
+  // Setup canvas
   useEffect(() => {
     if (passo === 5 && canvasRef.current) {
       const canvas = canvasRef.current;
@@ -124,7 +131,7 @@ export default function NovoRDOPage() {
         canvas.width = rect.width * 2;
         canvas.height = rect.height * 2;
         ctx.scale(2, 2);
-        ctx.strokeStyle = '#1e3a5f';
+        ctx.strokeStyle = '#111111';
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -306,6 +313,9 @@ export default function NovoRDOPage() {
         observacao: check.observacao || null,
       }));
 
+      const totalEfetivo = Object.values(efetivoCategorias).reduce((a, b) => a + b, 0);
+      const climaDescricao = `Manhã: ${climaManha} · Tarde: ${climaTarde}`;
+
       const { data: newRdo, error: insertError } = await supabase
         .from('demo_rdo_registros')
         .insert({
@@ -313,10 +323,10 @@ export default function NovoRDOPage() {
           trecho_id: session!.trecho_id || 'd301f2ac-0a56-43f1-8f24-5d5d67683935',
           data: new Date().toISOString().split('T')[0],
           turno,
-          clima_condicao: 'Parcialmente Nublado',
-          clima_temperatura: 27,
-          clima_umidade: 60,
-          clima_vento: 12,
+          clima_condicao: climaDescricao,
+          clima_temperatura: 26,
+          clima_umidade: 65,
+          clima_vento: 10,
           geolat,
           geolng,
           atividades: atividades.trim() || 'Atividades regulares de terraplenagem e drenagem.',
@@ -341,7 +351,7 @@ export default function NovoRDOPage() {
             usuario_nome: session?.nome,
             trecho_nome: session?.trecho_nome,
             turno,
-            equipe_qtd: equipe.length,
+            equipe_qtd: totalEfetivo,
             maquinas_qtd: maquinasPayload.length,
             fotos_qtd: fotosDia.length,
           }),
@@ -364,85 +374,95 @@ export default function NovoRDOPage() {
     );
   }
 
+  const stepTitles: Record<number, string> = {
+    1: 'Identificação & Clima',
+    2: 'Efetivo da Obra',
+    3: 'Equipamentos',
+    4: 'Atividades & Fotos',
+    5: 'Assinatura & Envio',
+  };
+
   const hojeFormatado = new Intl.DateTimeFormat('pt-BR', {
     weekday: 'long',
     day: '2-digit',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
   }).format(new Date());
 
-  return (
-    <main className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col justify-between">
-      {/* Header: "← Voltar" | "RDO [data]" | "[passo] de 5" */}
-      <header className="h-[52px] bg-[#F7F7F5] border-b border-[#E5E5E3] px-6 flex items-center justify-between">
-        <button
-          onClick={() => {
-            if (passo > 1) setPasso((prev) => prev - 1);
-            else router.push('/menu');
-          }}
-          className="text-[14px] text-[#111111] hover:underline"
-        >
-          ← Voltar
-        </button>
-        <span className="text-[16px] font-normal text-[#111111]">
-          RDO {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-        </span>
-        <span className="text-[13px] font-normal text-[#9B9B9B]">
-          {passo} de 5
-        </span>
-      </header>
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-      {/* Barra progresso 2px ink */}
-      <div className="w-full h-[2px] bg-[#EFEFED]">
+  return (
+    <main className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col justify-between font-sans">
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          BARRA DE PROGRESSO MULTI-STEP (2PX)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="w-full h-[2px] bg-[#E2E2DC] sticky top-0 z-30">
         <div
-          className="h-full bg-[#111111] transition-all duration-500 rounded-none"
+          className="h-full bg-[#111111] transition-all duration-300 rounded-none"
           style={{ width: `${(passo / 5) * 100}%` }}
         />
       </div>
 
-      {/* Padding 24px */}
-      <div className="flex-1 max-w-md w-full mx-auto p-6">
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          HEADER UNIFICADO (56PX)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <header className="h-[56px] bg-white border-b border-[#E2E2DC] px-4 flex items-center justify-between sticky top-[2px] z-20 select-none">
+        <button
+          type="button"
+          onClick={() => {
+            if (passo > 1) setPasso((prev) => (prev - 1) as any);
+            else router.push('/menu');
+          }}
+          className="min-w-[44px] min-h-[44px] flex items-center text-[14px] font-medium text-[#111111] hover:opacity-80 transition-opacity"
+        >
+          ← Voltar
+        </button>
+        <h1 className="text-[18px] font-semibold text-[#111111] tracking-[-0.3px] truncate px-2">
+          {stepTitles[passo]}
+        </h1>
+        <div className="min-w-[44px] min-h-[44px]" />
+      </header>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          CONTEÚDO DO FORMULÁRIO (ESPAÇAMENTO 24PX)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="flex-1 max-w-md w-full mx-auto px-4 py-6 pb-32 space-y-6">
         {erro && (
-          <div className="mb-6 text-[13px] text-[#111111] border-b border-[#111111] pb-2">
+          <div className="p-4 bg-white border border-[#DC2626] text-[13px] text-[#DC2626]">
             {erro}
           </div>
         )}
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             PASSO 1: IDENTIFICAÇÃO & CLIMA
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {passo === 1 && (
-          <div>
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
-              IDENTIFICAÇÃO
-            </span>
-
-            {/* Lista flat */}
-            <div className="divide-y divide-[#E5E5E3] border-t border-[#E5E5E3] mb-6">
-              <div className="py-4">
-                <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-1">
-                  TRECHO
+          <div className="space-y-6">
+            {/* Trecho e Data */}
+            <div className="space-y-4 bg-white border border-[#E2E2DC] p-4 rounded-none">
+              <div>
+                <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-1">
+                  TRECHO ATIVO
                 </span>
-                <p className="text-[20px] font-normal leading-none text-[#111111]">
-                  {session.trecho_nome || 'Trecho 01 — Acesso Norte'}
+                <p className="text-[15px] font-semibold text-[#111111]">
+                  {session.trecho_nome || 'Pacote 15 e 19'}
                 </p>
               </div>
-
-              <div className="py-4">
-                <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-1">
-                  DATA
+              <div className="border-t border-[#E2E2DC] pt-3">
+                <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-1">
+                  DATA DO RELATÓRIO
                 </span>
-                <p className="text-[20px] font-normal leading-none text-[#111111] capitalize">
-                  {hojeFormatado}
+                <p className="text-[15px] text-[#111111]">
+                  {capitalize(hojeFormatado)}
                 </p>
               </div>
             </div>
 
-            {/* TURNO */}
-            <div className="mb-6">
-              <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-3">
-                TURNO
-              </span>
+            {/* Turno */}
+            <div>
+              <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-2">
+                TURNO DE TRABALHO
+              </label>
               <div className="grid grid-cols-3 gap-2">
                 {(['manha', 'tarde', 'noite'] as const).map((t) => {
                   const label = t === 'manha' ? 'Manhã' : t === 'tarde' ? 'Tarde' : 'Noite';
@@ -452,10 +472,10 @@ export default function NovoRDOPage() {
                       key={t}
                       type="button"
                       onClick={() => setTurno(t)}
-                      className={`py-2 text-[14px] font-normal rounded-[4px] border transition-colors ${
+                      className={`h-[44px] text-[14px] font-medium rounded-none border transition-colors cursor-pointer ${
                         active
                           ? 'bg-[#111111] text-white border-[#111111]'
-                          : 'border-[#E5E5E3] text-[#111111]'
+                          : 'bg-white text-[#111111] border-[#E2E2DC]'
                       }`}
                     >
                       {label}
@@ -465,380 +485,428 @@ export default function NovoRDOPage() {
               </div>
             </div>
 
-            {/* CLIMA */}
-            <div className="mb-10">
-              <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-1">
-                CLIMA
-              </span>
-              <p className="text-[16px] font-normal text-[#6B6B6B]">
-                Parcialmente Nublado, 27°C
-              </p>
-              <span className="text-[11px] font-normal text-[#9B9B9B]">
-                Capturado via GPS
-              </span>
-            </div>
-
-            <button
-              onClick={() => setPasso(2)}
-              className="w-full h-12 bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[6px] transition-colors flex items-center justify-center cursor-pointer"
-            >
-              Próximo
-            </button>
-          </div>
-        )}
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            PASSO 2: EQUIPE
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {passo === 2 && (
-          <div>
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-4">
-              EQUIPE
-            </span>
-
-            <input
-              type="file"
-              accept="image/*"
-              ref={crachaInputRef}
-              onChange={handleCrachaFile}
-              className="hidden"
-            />
-
-            {/* Área câmera crachá */}
-            <div
-              onClick={() => crachaInputRef.current?.click()}
-              className="border border-dashed border-[#E5E5E3] rounded-none py-8 px-6 bg-[#F7F7F5] flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-6"
-            >
-              {uploadingCracha ? (
-                <Loader2 className="w-5 h-5 text-[#9B9B9B] animate-spin mb-2" />
-              ) : (
-                <Camera className="w-5 h-5 text-[#9B9B9B] mb-2" />
-              )}
-              <span className="text-[14px] font-normal text-[#6B6B6B]">
-                {uploadingCracha ? 'Processando QR code...' : 'Fotografar crachá'}
-              </span>
-            </div>
-
-            {/* Lista membros accordion */}
-            <div className="divide-y divide-[#E5E5E3] border-t border-[#E5E5E3] mb-10">
-              {equipe.map((m, idx) => {
-                const isOpen = openMembroIdx === idx;
-                return (
-                  <div key={idx} className="border-b border-[#E5E5E3]">
-                    <div
-                      onClick={() => setOpenMembroIdx(isOpen ? null : idx)}
-                      className="py-4 flex items-center justify-between cursor-pointer select-none"
-                    >
-                      <span className="text-[20px] font-normal leading-none text-[#111111]">
-                        {m.nome}
-                      </span>
-                      <span className="text-[13px] font-normal text-[#9B9B9B]">
-                        {m.funcao}
-                      </span>
-                    </div>
-
-                    {isOpen && (
-                      <div className="bg-white p-4 mb-4 flex items-center justify-between">
-                        <span className="text-[16px] text-[#6B6B6B]">
-                          {m.funcao} · Presente
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEquipe((prev) => prev.filter((_, i) => i !== idx));
-                            setOpenMembroIdx(null);
-                          }}
-                          className="text-[13px] text-[#9B9B9B] hover:text-[#111111]"
-                        >
-                          × Remover
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={() => setPasso(3)}
-              className="w-full h-12 bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[6px] transition-colors flex items-center justify-center cursor-pointer"
-            >
-              Próximo
-            </button>
-          </div>
-        )}
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            PASSO 3: MÁQUINAS
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {passo === 3 && (
-          <div>
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-4">
-              MÁQUINAS
-            </span>
-
-            {/* Lista accordion por máquina */}
-            <div className="divide-y divide-[#E5E5E3] border-t border-[#E5E5E3] mb-10">
-              {catalogoMaquinas.map((maq) => {
-                const check = maquinasCheck[maq.id] || { status: 'operando', observacao: '' };
-                const isOpen = openMaquinaId === maq.id;
-                const statusLabel =
-                  check.status === 'operando'
-                    ? 'Operando'
-                    : check.status === 'parada'
-                    ? 'Parada'
-                    : check.status === 'manutencao'
-                    ? 'Manutenção'
-                    : 'Ausente';
-
-                return (
-                  <div key={maq.id} className="border-b border-[#E5E5E3]">
-                    <div
-                      onClick={() => setOpenMaquinaId(isOpen ? null : maq.id)}
-                      className="py-4 flex items-center justify-between cursor-pointer select-none"
-                    >
-                      <span className="text-[20px] font-normal leading-none text-[#111111] truncate pr-4">
-                        {maq.nome}
-                      </span>
-                      <span className="text-[13px] font-normal text-[#6B6B6B] shrink-0">
-                        {statusLabel}
-                      </span>
-                    </div>
-
-                    {isOpen && (
-                      <div className="bg-white p-4 mb-4">
-                        <div className="grid grid-cols-4 gap-2 mb-4">
-                          {(['operando', 'parada', 'manutencao', 'ausente'] as const).map((st) => {
-                            const lbl =
-                              st === 'operando'
-                                ? 'Operando'
-                                : st === 'parada'
-                                ? 'Parada'
-                                : st === 'manutencao'
-                                ? 'Manutenção'
-                                : 'Ausente';
-                            const active = check.status === st;
-                            return (
-                              <button
-                                key={st}
-                                type="button"
-                                onClick={() =>
-                                  setMaquinasCheck((prev) => ({
-                                    ...prev,
-                                    [maq.id]: { ...check, status: st },
-                                  }))
-                                }
-                                className={`py-1.5 px-2 text-[13px] font-normal rounded-[4px] border transition-colors ${
-                                  active
-                                    ? 'bg-[#111111] text-white border-[#111111]'
-                                    : 'border-[#E5E5E3] text-[#111111]'
-                                }`}
-                              >
-                                {lbl}
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {(check.status === 'parada' || check.status === 'manutencao') && (
-                          <div className="flex flex-col mt-2">
-                            <label className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] mb-[4px]">
-                              OBSERVAÇÃO
-                            </label>
-                            <input
-                              type="text"
-                              value={check.observacao}
-                              onChange={(e) =>
-                                setMaquinasCheck((prev) => ({
-                                  ...prev,
-                                  [maq.id]: { ...check, observacao: e.target.value },
-                                }))
-                              }
-                              placeholder="Motivo..."
-                              className="w-full bg-transparent border-0 border-b border-[#E5E5E3] focus:border-[#111111] py-2 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] outline-none rounded-none transition-colors"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={() => setPasso(4)}
-              className="w-full h-12 bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[6px] transition-colors flex items-center justify-center cursor-pointer"
-            >
-              Próximo
-            </button>
-          </div>
-        )}
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            PASSO 4: FOTOS & ATIVIDADES
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {passo === 4 && (
-          <div>
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-3">
-              FOTOS
-            </span>
-
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              ref={fotosInputRef}
-              onChange={handleFotosDiaFile}
-              className="hidden"
-            />
-
-            <div
-              onClick={() => fotosInputRef.current?.click()}
-              className="border border-dashed border-[#E5E5E3] rounded-none py-10 px-6 bg-[#F7F7F5] flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-4"
-            >
-              {uploadingFotoDia ? (
-                <Loader2 className="w-5 h-5 text-[#9B9B9B] animate-spin mb-2" />
-              ) : (
-                <Camera className="w-5 h-5 text-[#9B9B9B] mb-2" />
-              )}
-              <span className="text-[14px] font-normal text-[#6B6B6B]">
-                {uploadingFotoDia ? 'Enviando fotos...' : 'Adicionar fotos do dia'}
-              </span>
-            </div>
-
-            {fotosDia.length > 0 && (
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                {fotosDia.map((f, idx) => (
-                  <div
-                    key={idx}
-                    className="relative aspect-video bg-[#EFEFED] rounded-[4px] overflow-hidden border border-[#E5E5E3]"
-                  >
-                    <img
-                      src={f}
-                      alt={`Foto ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+            {/* Clima Manhã */}
+            <div>
+              <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-2">
+                CLIMA — PERÍODO DA MANHÃ
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['bom', 'nublado', 'chuva'] as const).map((c) => {
+                  const label = c === 'bom' ? 'Bom' : c === 'nublado' ? 'Nublado' : 'Chuva';
+                  const active = climaManha === c;
+                  return (
                     <button
+                      key={c}
                       type="button"
-                      onClick={() => setFotosDia((prev) => prev.filter((_, i) => i !== idx))}
-                      className="absolute top-1 right-1 bg-black/60 text-[#9B9B9B] hover:text-white text-[12px] w-6 h-6 rounded-full flex items-center justify-center"
+                      onClick={() => setClimaManha(c)}
+                      className={`h-[44px] text-[14px] font-medium rounded-none border transition-colors cursor-pointer ${
+                        active
+                          ? 'bg-[#111111] text-white border-[#111111]'
+                          : 'bg-white text-[#111111] border-[#E2E2DC]'
+                      }`}
                     >
-                      ×
+                      {label}
                     </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Clima Tarde */}
+            <div>
+              <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-2">
+                CLIMA — PERÍODO DA TARDE
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['bom', 'nublado', 'chuva'] as const).map((c) => {
+                  const label = c === 'bom' ? 'Bom' : c === 'nublado' ? 'Nublado' : 'Chuva';
+                  const active = climaTarde === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setClimaTarde(c)}
+                      className={`h-[44px] text-[14px] font-medium rounded-none border transition-colors cursor-pointer ${
+                        active
+                          ? 'bg-[#111111] text-white border-[#111111]'
+                          : 'bg-white text-[#111111] border-[#E2E2DC]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            PASSO 2: EFETIVO
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        {passo === 2 && (
+          <div className="space-y-6">
+            <div>
+              <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-3">
+                QUANTIDADE POR CATEGORIA
+              </span>
+              <div className="space-y-3">
+                {Object.entries(efetivoCategorias).map(([cat, qtd]) => (
+                  <div
+                    key={cat}
+                    className="flex items-center justify-between bg-white border border-[#E2E2DC] p-3 rounded-none"
+                  >
+                    <span className="text-[14px] font-medium text-[#111111]">
+                      {cat}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEfetivoCategorias((prev) => ({
+                            ...prev,
+                            [cat]: Math.max(0, (prev[cat] || 0) - 1),
+                          }))
+                        }
+                        className="w-[36px] h-[36px] bg-[#F7F7F5] border border-[#E2E2DC] text-[16px] font-bold flex items-center justify-center cursor-pointer hover:bg-[#E2E2DC] rounded-none"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="0"
+                        value={qtd}
+                        onChange={(e) =>
+                          setEfetivoCategorias((prev) => ({
+                            ...prev,
+                            [cat]: parseInt(e.target.value) || 0,
+                          }))
+                        }
+                        className="w-[48px] h-[36px] text-center bg-white border border-[#E2E2DC] rounded-none text-[15px] font-semibold text-[#111111] focus:outline-none focus:border-[#111111]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEfetivoCategorias((prev) => ({
+                            ...prev,
+                            [cat]: (prev[cat] || 0) + 1,
+                          }))
+                        }
+                        className="w-[36px] h-[36px] bg-[#F7F7F5] border border-[#E2E2DC] text-[16px] font-bold flex items-center justify-center cursor-pointer hover:bg-[#E2E2DC] rounded-none"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
-            )}
+            </div>
 
-            <div className="w-full border-b border-[#E5E5E3] my-6" />
+            {/* Leitura de Crachá */}
+            <div>
+              <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-2">
+                COLABORADORES NOMINAIS
+              </span>
 
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
-              ATIVIDADES DO DIA
+              <input
+                type="file"
+                accept="image/*"
+                ref={crachaInputRef}
+                onChange={handleCrachaFile}
+                className="hidden"
+              />
+
+              <div
+                onClick={() => crachaInputRef.current?.click()}
+                className="border border-dashed border-[#E2E2DC] rounded-none p-5 bg-white flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-3"
+              >
+                {uploadingCracha ? (
+                  <Loader2 className="w-5 h-5 text-[#6B7280] animate-spin mb-2" />
+                ) : (
+                  <Camera className="w-5 h-5 text-[#6B7280] mb-2 stroke-[1.5]" />
+                )}
+                <span className="text-[13px] font-medium text-[#6B7280]">
+                  {uploadingCracha ? 'Processando QR Code...' : 'Escanear QR Code de crachá'}
+                </span>
+              </div>
+
+              <div className="divide-y divide-[#E2E2DC] border border-[#E2E2DC] bg-white">
+                {equipe.map((m, idx) => (
+                  <div key={idx} className="p-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-[14px] font-medium text-[#111111]">{m.nome}</p>
+                      <p className="text-[12px] text-[#9CA3AF]">{m.funcao}</p>
+                    </div>
+                    <span className="bg-[#F7F7F5] border border-[#E2E2DC] text-[#6B7280] text-[12px] font-medium px-2 py-0.5 rounded-none">
+                      Presente
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            PASSO 3: EQUIPAMENTOS
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        {passo === 3 && (
+          <div className="space-y-4">
+            <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+              STATUS DOS EQUIPAMENTOS
             </span>
-            <textarea
-              rows={5}
-              required
-              value={atividades}
-              onChange={(e) => setAtividades(e.target.value)}
-              placeholder="Descreva as atividades executadas hoje..."
-              className="w-full bg-transparent border-0 border-b border-[#E5E5E3] focus:border-[#111111] py-3 text-[16px] text-[#111111] placeholder:text-[#9B9B9B] outline-none rounded-none resize-none transition-colors mb-10"
-            />
 
-            <button
-              onClick={() => setPasso(5)}
-              className="w-full h-12 bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[6px] transition-colors flex items-center justify-center cursor-pointer"
-            >
-              Próximo
-            </button>
+            <div className="space-y-4">
+              {catalogoMaquinas.map((maq) => {
+                const check = maquinasCheck[maq.id] || { status: 'operando', observacao: '' };
+                return (
+                  <div
+                    key={maq.id}
+                    className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-[15px] font-semibold text-[#111111]">
+                          {maq.nome}
+                        </div>
+                        <div className="text-[13px] text-[#9CA3AF]">
+                          {maq.codigo || maq.tipo}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botões planos de seleção */}
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {(['operando', 'parada', 'manutencao', 'ausente'] as const).map((st) => {
+                        const lbl =
+                          st === 'operando'
+                            ? 'Operando'
+                            : st === 'parada'
+                            ? 'Parada'
+                            : st === 'manutencao'
+                            ? 'Manut.'
+                            : 'Ausente';
+                        const active = check.status === st;
+                        return (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() =>
+                              setMaquinasCheck((prev) => ({
+                                ...prev,
+                                [maq.id]: { ...check, status: st },
+                              }))
+                            }
+                            className={`h-[38px] text-[12px] font-medium rounded-none border transition-colors cursor-pointer ${
+                              active
+                                ? 'bg-[#111111] text-white border-[#111111]'
+                                : 'bg-white text-[#111111] border-[#E2E2DC]'
+                            }`}
+                          >
+                            {lbl}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {(check.status === 'parada' || check.status === 'manutencao') && (
+                      <div className="pt-2">
+                        <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-1">
+                          OBSERVAÇÃO / MOTIVO
+                        </label>
+                        <input
+                          type="text"
+                          value={check.observacao}
+                          onChange={(e) =>
+                            setMaquinasCheck((prev) => ({
+                              ...prev,
+                              [maq.id]: { ...check, observacao: e.target.value },
+                            }))
+                          }
+                          placeholder="Informe o motivo da paralisação ou serviço"
+                          className="w-full h-[48px] px-3 bg-white border border-[#E2E2DC] rounded-none text-[14px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-[#111111] focus:outline-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            PASSO 4: ATIVIDADES & FOTOS
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        {passo === 4 && (
+          <div className="space-y-6">
+            {/* Textarea de Atividades */}
+            <div>
+              <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-2">
+                ATIVIDADES EXECUTADAS NO DIA *
+              </label>
+              <textarea
+                rows={5}
+                required
+                value={atividades}
+                onChange={(e) => setAtividades(e.target.value)}
+                placeholder="Descreva detalhadamente os serviços executados pelas equipes hoje..."
+                className="w-full p-4 bg-white border border-[#E2E2DC] rounded-none text-[15px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-[#111111] focus:outline-none resize-none transition-colors"
+              />
+            </div>
+
+            {/* Upload de fotos idêntico à Vistoria */}
+            <div>
+              <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-2">
+                FOTOS DO DIA
+              </label>
+
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                ref={fotosInputRef}
+                onChange={handleFotosDiaFile}
+                className="hidden"
+              />
+
+              <div
+                onClick={() => fotosInputRef.current?.click()}
+                className="border border-dashed border-[#E2E2DC] rounded-none p-6 bg-white flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-3"
+              >
+                {uploadingFotoDia ? (
+                  <Loader2 className="w-5 h-5 text-[#6B7280] animate-spin mb-2" />
+                ) : (
+                  <Camera className="w-5 h-5 text-[#6B7280] mb-2 stroke-[1.5]" />
+                )}
+                <span className="text-[13px] font-medium text-[#6B7280]">
+                  {uploadingFotoDia ? 'Enviando fotos...' : 'Clique para adicionar fotos do canteiro'}
+                </span>
+              </div>
+
+              {fotosDia.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {fotosDia.map((f, idx) => (
+                    <div
+                      key={idx}
+                      className="relative aspect-square bg-[#F7F7F5] border border-[#E2E2DC] rounded-none overflow-hidden"
+                    >
+                      <img
+                        src={f}
+                        alt={`Foto ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFotosDia((prev) => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-1 right-1 bg-black/70 text-white text-[12px] w-5 h-5 flex items-center justify-center cursor-pointer hover:bg-black"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             PASSO 5: ASSINATURA, GPS & RESUMO
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {passo === 5 && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B]">
-                ASSINATURA
-              </span>
-              {hasAssinatura && (
-                <button
-                  type="button"
-                  onClick={clearCanvas}
-                  className="text-[13px] text-[#9B9B9B] hover:text-[#111111]"
-                >
-                  Limpar
-                </button>
-              )}
+          <div className="space-y-6">
+            {/* Assinatura */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                  ASSINATURA DIGITAL DO RESPONSÁVEL *
+                </label>
+                {hasAssinatura && (
+                  <button
+                    type="button"
+                    onClick={clearCanvas}
+                    className="text-[12px] text-[#DC2626] hover:underline cursor-pointer"
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
+
+              <div className="border border-[#E2E2DC] bg-white h-[180px] w-full rounded-none relative overflow-hidden">
+                <canvas
+                  ref={canvasRef}
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing}
+                  onTouchMove={draw}
+                  onTouchEnd={stopDrawing}
+                  className="w-full h-full touch-none cursor-crosshair"
+                />
+                {!hasAssinatura && (
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-[13px] text-[#9CA3AF]">
+                    Assine com o dedo ou mouse
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Canvas */}
-            <div className="border border-[#E5E5E3] rounded-none bg-white h-[180px] w-full overflow-hidden relative mb-8">
-              <canvas
-                ref={canvasRef}
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={stopDrawing}
-                onMouseLeave={stopDrawing}
-                onTouchStart={startDrawing}
-                onTouchMove={draw}
-                onTouchEnd={stopDrawing}
-                className="w-full h-full touch-none cursor-crosshair"
-              />
-              {!hasAssinatura && (
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-[13px] text-[#C4C4C2]">
-                  Assine com o dedo ou mouse
-                </div>
-              )}
-            </div>
-
-            <div className="w-full border-b border-[#E5E5E3] mb-8" />
-
-            {/* LOCALIZAÇÃO */}
-            <div className="mb-8">
-              <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-1">
-                LOCALIZAÇÃO
+            {/* Localização GPS */}
+            <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-1">
+              <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                LOCALIZAÇÃO GEOREFERENCIADA
               </span>
-              <p className="text-[13px] text-[#9B9B9B]">
+              <p className="text-[14px] text-[#111111]">
                 Lat: {geolat} · Lng: {geolng}
               </p>
             </div>
 
-            <div className="w-full border-b border-[#E5E5E3] mb-8" />
-
-            {/* RESUMO */}
-            <div className="mb-10">
-              <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-3">
-                RESUMO
+            {/* Resumo */}
+            <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-2">
+              <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                RESUMO ANTES DO ENVIO
               </span>
-              <div className="space-y-1 text-[16px] text-[#6B6B6B]">
-                <p>{session.trecho_nome || 'Trecho 01 — Acesso Norte'}</p>
-                <p>
-                  {turno === 'manha' ? 'Manhã' : turno === 'tarde' ? 'Tarde' : 'Noite'} ·{' '}
-                  {equipe.length} colaboradores
-                </p>
-                <p>
-                  {catalogoMaquinas.length} máquinas · {fotosDia.length} fotos
-                </p>
+              <div className="text-[14px] text-[#111111] space-y-1">
+                <p><span className="text-[#6B7280]">Trecho:</span> {session.trecho_nome || 'Pacote 15 e 19'}</p>
+                <p><span className="text-[#6B7280]">Turno:</span> {turno === 'manha' ? 'Manhã' : turno === 'tarde' ? 'Tarde' : 'Noite'}</p>
+                <p><span className="text-[#6B7280]">Efetivo total:</span> {Object.values(efetivoCategorias).reduce((a, b) => a + b, 0)} trabalhadores</p>
+                <p><span className="text-[#6B7280]">Equipamentos:</span> {catalogoMaquinas.length} máquinas mapeadas</p>
+                <p><span className="text-[#6B7280]">Fotos registradas:</span> {fotosDia.length} imagens</p>
               </div>
             </div>
-
-            <button
-              disabled={!hasAssinatura || submitting}
-              onClick={handleSubmitRDO}
-              className="w-full h-12 bg-[#111111] hover:bg-black disabled:opacity-40 text-white text-[14px] font-medium rounded-[6px] transition-colors flex items-center justify-center cursor-pointer"
-            >
-              {submitting ? 'Gravando RDO...' : 'Enviar RDO'}
-            </button>
           </div>
         )}
       </div>
 
-      <footer className="w-full text-center py-4 text-[11px] text-[#9B9B9B] border-t border-[#E5E5E3]">
-        MetricLab · Pacote 15 e 19
-      </footer>
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          BOTÃO FIXO NO RODAPÉ (52PX)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#F7F7F5] border-t border-[#E2E2DC] z-30">
+        <div className="max-w-md mx-auto">
+          {passo < 5 && (
+            <button
+              type="button"
+              onClick={() => setPasso((prev) => (prev + 1) as any)}
+              className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-none transition-opacity flex items-center justify-center cursor-pointer"
+            >
+              Próximo
+            </button>
+          )}
+
+          {passo === 5 && (
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={handleSubmitRDO}
+              className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-none transition-opacity flex items-center justify-center cursor-pointer disabled:opacity-40"
+            >
+              {submitting ? 'Gravando RDO...' : 'Enviar RDO'}
+            </button>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

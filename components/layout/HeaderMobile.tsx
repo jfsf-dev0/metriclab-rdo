@@ -39,15 +39,15 @@ export function HeaderMobile({
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 h-[52px] w-full bg-[#F7F7F5] border-b border-[#E5E5E3] px-5 flex items-center justify-between select-none',
+        'sticky top-0 z-40 h-[56px] w-full bg-white border-b border-[#E2E2DC] px-4 flex items-center justify-between select-none',
         className
       )}
     >
-      <div className="flex items-center gap-2 min-w-[70px]">
+      <div className="flex items-center gap-1 min-w-[44px] min-h-[44px]">
         {showBack ? (
           <button
             onClick={handleBack}
-            className="text-[14px] font-normal text-[#111111] hover:text-black cursor-pointer bg-transparent border-none p-0 flex items-center gap-1"
+            className="min-w-[44px] min-h-[44px] -ml-2 text-[14px] font-medium text-[#111111] hover:text-black cursor-pointer bg-transparent border-none p-0 flex items-center justify-center gap-1"
             aria-label="Voltar"
           >
             ← Voltar
@@ -61,20 +61,20 @@ export function HeaderMobile({
 
       {title && (
         <div className="flex-1 text-center px-2">
-          <h1 className="text-[14px] font-medium text-[#111111] truncate tracking-[-0.2px]">
+          <h1 className="text-[18px] font-semibold text-[#111111] truncate tracking-[-0.3px]">
             {title}
           </h1>
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2 min-w-[70px] text-[#111111]">
+      <div className="flex items-center justify-end gap-2 min-w-[44px] min-h-[44px] text-[#111111]">
         {greeting && (
-          <span className="text-[13px] text-[#9B9B9B] font-normal">
+          <span className="text-[13px] text-[#9CA3AF] font-normal">
             {greeting}
           </span>
         )}
         {rightBadge && (
-          <span className="bg-transparent border border-[#E5E5E3] rounded-[4px] px-2 py-0.5 text-[11px] font-medium tracking-[0.3px] text-[#6B6B6B]">
+          <span className="bg-white border border-[#E2E2DC] rounded-none px-2 py-0.5 text-[12px] font-medium tracking-[0.04em] text-[#6B7280]">
             {rightBadge}
           </span>
         )}

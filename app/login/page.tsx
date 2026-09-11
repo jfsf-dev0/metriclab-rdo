@@ -170,7 +170,7 @@ function LoginCard() {
         left: '50%',
         transform: 'translate(-50%, -50%)',
       }}
-      className={`bg-white rounded-[16px] border border-[#E5E5E3] px-7 py-8 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 ease-in-out select-none ${
+      className={`bg-white rounded-none border border-[#E2E2DC] px-6 py-8 shadow-none select-none ${
         shaking ? 'animate-shake' : ''
       }`}
     >
@@ -184,11 +184,11 @@ function LoginCard() {
       </div>
 
       <div className="text-center mt-4">
-        <h1 className="text-[22px] font-bold text-[#111111] leading-tight">
-          Relatório Diário de Obra
+        <h1 className="text-[18px] font-semibold text-[#111111] leading-tight tracking-[-0.3px]">
+          Acesso
         </h1>
-        <p className="text-[13px] font-normal text-[#9B9B9B] mt-1">
-          Pacote 15 e 19
+        <p className="text-[13px] font-normal text-[#9CA3AF] mt-1">
+          Informe seu telefone cadastrado
         </p>
       </div>
 
@@ -200,7 +200,7 @@ function LoginCard() {
           <button
             type="button"
             onClick={() => setEtapa(1)}
-            className="w-full h-[44px] bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[8px] transition-colors cursor-pointer flex items-center justify-center"
+            className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-none transition-opacity cursor-pointer flex items-center justify-center"
           >
             Entrar
           </button>
@@ -213,18 +213,21 @@ function LoginCard() {
       {(etapa === 1 || etapa === 2) && (
         <div className="mt-6 space-y-5 animate-in fade-in-0 duration-200">
           <div>
+            <label className="block text-[12px] font-medium text-[#6B7280] uppercase tracking-[0.08em] mb-2">
+              Telefone ou e-mail
+            </label>
             <input
               ref={inputIdentificadorRef}
               type="text"
               value={identificador}
               onChange={handleIdentificadorChange}
-              placeholder="seu@email.com, telefone ou usuário"
-              className="w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2.5 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] focus:border-[#111111] focus:outline-none transition-colors"
+              placeholder="+55 (11) 9XXXX-XXXX"
+              className="w-full h-[48px] bg-white border border-[#E2E2DC] rounded-none px-4 py-3.5 text-[15px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-[#111111] focus:outline-none transition-colors"
             />
           </div>
 
           {erro && (
-            <p className="text-[12px] text-[#dc2626] font-medium text-center">
+            <p className="text-[12px] text-[#DC2626] font-medium text-center">
               {erro}
             </p>
           )}
@@ -234,7 +237,7 @@ function LoginCard() {
             <button
               type="button"
               disabled
-              className="w-full h-[44px] bg-[#111111] text-white text-[14px] font-medium rounded-[8px] opacity-40 cursor-not-allowed flex items-center justify-center"
+              className="w-full h-[52px] bg-[#111111] text-white text-[15px] font-semibold rounded-none opacity-40 cursor-not-allowed flex items-center justify-center"
             >
               Entrar
             </button>
@@ -246,7 +249,7 @@ function LoginCard() {
               <button
                 type="button"
                 onClick={() => handleEscolherMetodo('chave')}
-                className="flex-1 h-[44px] bg-white border border-[#E5E5E3] rounded-[8px] inline-flex items-center justify-center gap-2 hover:bg-[#F9F9F8] transition-colors cursor-pointer"
+                className="flex-1 h-[52px] bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-none inline-flex items-center justify-center gap-2 hover:bg-[#F7F7F5] transition-colors cursor-pointer"
               >
                 <Lock className="w-4 h-4 text-[#111111]" />
                 <span className="text-[13px] font-medium text-[#111111]">
@@ -257,7 +260,7 @@ function LoginCard() {
               <button
                 type="button"
                 onClick={() => handleEscolherMetodo('codigo_unico')}
-                className="flex-1 h-[44px] bg-white border border-[#E5E5E3] rounded-[8px] inline-flex items-center justify-center gap-2 hover:bg-[#F9F9F8] transition-colors cursor-pointer"
+                className="flex-1 h-[52px] bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-none inline-flex items-center justify-center gap-2 hover:bg-[#F7F7F5] transition-colors cursor-pointer"
               >
                 <Smartphone className="w-4 h-4 text-[#111111]" />
                 <span className="text-[13px] font-medium text-[#111111]">
@@ -272,7 +275,7 @@ function LoginCard() {
             <button
               type="button"
               onClick={handleVoltar}
-              className="text-[12px] text-[#9B9B9B] hover:text-[#111111] transition-colors cursor-pointer"
+              className="text-[12px] text-[#9CA3AF] hover:text-[#111111] transition-colors cursor-pointer"
             >
               ← Voltar
             </button>
@@ -290,7 +293,7 @@ function LoginCard() {
         >
           {metodo === 'codigo_unico' && identificador.trim() ? (
             <div className="text-center">
-              <p className="text-[13px] text-[#6B6B6B]">
+              <p className="text-[13px] text-[#6B7280]">
                 Enviamos um código para
               </p>
               <p className="text-[13px] font-medium text-[#111111] mt-0.5 truncate">
@@ -299,7 +302,7 @@ function LoginCard() {
             </div>
           ) : (
             <div className="text-center">
-              <p className="text-[12px] text-[#9B9B9B] truncate">
+              <p className="text-[13px] text-[#9CA3AF] truncate">
                 {identificador}
               </p>
             </div>
@@ -307,13 +310,13 @@ function LoginCard() {
 
           {/* Campo de Código 6 Dígitos */}
           <div>
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] block">
                 {metodo === 'chave'
-                  ? 'CÓDIGO DE ACESSO (6 DÍGITOS)'
+                  ? 'CÓDIGO DE ACESSO'
                   : 'CÓDIGO RECEBIDO'}
               </label>
-              <span className="text-[10px] text-[#C4C4C2]">
+              <span className="text-[12px] text-[#9CA3AF]">
                 Demo: 123456
               </span>
             </div>
@@ -329,15 +332,15 @@ function LoginCard() {
                 setErro(null);
               }}
               placeholder={metodo === 'chave' ? '••••••' : '000000'}
-              className={`w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] focus:border-[#111111] focus:outline-none transition-colors ${
+              className={`w-full h-[48px] bg-white border border-[#E2E2DC] rounded-none px-4 text-[16px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-[#111111] focus:outline-none transition-colors ${
                 metodo === 'chave'
-                  ? 'tracking-[4px]'
-                  : 'tracking-[6px] text-center'
+                  ? 'tracking-[6px]'
+                  : 'tracking-[8px] text-center'
               }`}
             />
 
             {erro && (
-              <p className="text-[12px] text-[#dc2626] font-medium mt-1.5 text-center">
+              <p className="text-[12px] text-[#DC2626] font-medium mt-1.5 text-center">
                 {erro}
               </p>
             )}
@@ -347,9 +350,9 @@ function LoginCard() {
           <button
             type="submit"
             disabled={codigo.length !== 6 || loading}
-            className={`w-full h-[44px] bg-[#111111] text-white text-[14px] font-medium rounded-[8px] transition-all flex items-center justify-center gap-2 ${
+            className={`w-full h-[52px] bg-[#111111] text-white text-[15px] font-semibold rounded-none transition-all flex items-center justify-center gap-2 ${
               codigo.length === 6 && !loading
-                ? 'hover:bg-black cursor-pointer opacity-100'
+                ? 'hover:bg-black active:opacity-85 cursor-pointer opacity-100'
                 : 'opacity-40 cursor-not-allowed'
             }`}
           >
@@ -372,20 +375,32 @@ function LoginCard() {
             <button
               type="button"
               onClick={handleVoltar}
-              className="text-[12px] text-[#9B9B9B] hover:text-[#111111] transition-colors cursor-pointer"
+              className="text-[12px] text-[#9CA3AF] hover:text-[#111111] transition-colors cursor-pointer"
             >
               ← Voltar
             </button>
           </div>
         </form>
       )}
+
+      {/* Link de Ajuda */}
+      <div className="text-center mt-6 pt-4 border-t border-[#E2E2DC]">
+        <a
+          href="https://wa.me/5511952137598"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[13px] text-[#6B7280] hover:text-[#111111] transition-colors"
+        >
+          Problemas com o acesso? Fale com o suporte
+        </a>
+      </div>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-[#F0F0F0] relative overflow-hidden">
+    <div className="min-h-screen bg-[#F7F7F5] relative overflow-hidden">
       <Suspense
         fallback={
           <div

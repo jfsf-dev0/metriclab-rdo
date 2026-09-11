@@ -12,7 +12,38 @@ export function MetricLabLogo({
   size = 'md',
   showText = true,
 }: MetricLabLogoProps) {
-  if (size === 'lg' || size === 'xl') {
+  if (size === 'xl') {
+    return (
+      <div className={cn('inline-flex flex-col items-center justify-center select-none', className)}>
+        <span
+          style={{
+            fontSize: '48px',
+            fontWeight: 700,
+            color: '#111111',
+            letterSpacing: '-0.8px',
+            lineHeight: 1,
+          }}
+        >
+          m<span style={{ color: '#F5A623' }}>.</span>
+        </span>
+        {showText && (
+          <span
+            style={{
+              fontSize: '14px',
+              fontWeight: 400,
+              color: '#9CA3AF',
+              letterSpacing: '-0.2px',
+              marginTop: '8px',
+            }}
+          >
+            MetricLab
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  if (size === 'lg') {
     return (
       <div className={cn('inline-flex flex-col items-center justify-center select-none', className)}>
         <span
@@ -34,6 +65,37 @@ export function MetricLabLogo({
               color: '#111111',
               letterSpacing: '0.2px',
               marginTop: '4px',
+            }}
+          >
+            MetricLab
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  if (size === 'md') {
+    return (
+      <div className={cn('inline-flex flex-col items-center justify-center select-none', className)}>
+        <span
+          style={{
+            fontSize: '28px',
+            fontWeight: 700,
+            color: '#111111',
+            letterSpacing: '-0.5px',
+            lineHeight: 1,
+          }}
+        >
+          m<span style={{ color: '#F5A623' }}>.</span>
+        </span>
+        {showText && (
+          <span
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: '#111111',
+              letterSpacing: '0.2px',
+              marginTop: '2px',
             }}
           >
             MetricLab

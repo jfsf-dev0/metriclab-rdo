@@ -13,17 +13,17 @@ export interface ButtonProps
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', fullWidth = false, loading, children, disabled, ...props }, ref) => {
     const variants = {
-      primary: 'bg-[#111111] hover:bg-black active:bg-[#222222] text-white font-medium rounded-[6px] transition-colors disabled:opacity-40',
-      secondary: 'bg-transparent hover:bg-[#EFEFED] text-[#111111] font-normal transition-colors disabled:opacity-40',
-      danger: 'bg-[#111111] hover:bg-black text-white font-medium rounded-[6px] transition-colors disabled:opacity-40',
-      outline: 'bg-transparent border border-[#E5E5E3] text-[#111111] hover:bg-[#EFEFED] rounded-[6px] font-medium transition-colors disabled:opacity-40',
-      ghost: 'bg-transparent text-[#6B6B6B] hover:text-[#111111] hover:bg-[#EFEFED] rounded-[6px] transition-colors disabled:opacity-40',
+      primary: 'bg-[#111111] hover:bg-black active:opacity-85 text-white font-semibold rounded-none transition-opacity disabled:opacity-40 shadow-none',
+      secondary: 'bg-white border border-[#111111] hover:bg-[#F7F7F5] active:opacity-85 text-[#111111] font-semibold rounded-none transition-opacity disabled:opacity-40 shadow-none',
+      danger: 'bg-[#DC2626] hover:bg-red-700 active:opacity-85 text-white font-semibold rounded-none transition-opacity disabled:opacity-40 shadow-none',
+      outline: 'bg-white border border-[#E2E2DC] text-[#111111] hover:border-[#111111] active:opacity-85 rounded-none font-medium transition-colors disabled:opacity-40 shadow-none',
+      ghost: 'bg-transparent text-[#6B7280] hover:text-[#111111] hover:bg-[#EFEFED] rounded-none transition-colors disabled:opacity-40',
     };
 
     const sizes = {
-      sm: 'px-3 py-1.5 text-[13px] min-h-[36px]',
-      md: 'px-6 py-3 text-[14px] min-h-[48px]',
-      lg: 'px-6 py-3 text-[15px] min-h-[48px]',
+      sm: 'px-4 py-2 text-[13px] h-[40px]',
+      md: 'px-6 py-3 text-[15px] h-[52px]',
+      lg: 'px-6 py-3 text-[15px] h-[52px]',
     };
 
     return (

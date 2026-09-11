@@ -1,8 +1,8 @@
 'use client';
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { HeaderMobile } from '@/components/layout/HeaderMobile';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { RDORegistro, EquipeMembro, MaquinaCheck } from '@/types/rdo';
 
@@ -47,7 +47,7 @@ export default function VisualizarRDOPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F7F7F5] flex items-center justify-center text-[#9B9B9B] text-[13px]">
+      <div className="min-h-screen bg-[#F7F7F5] flex items-center justify-center text-[#9CA3AF] text-[13px] font-sans">
         Carregando dados do relatório...
       </div>
     );
@@ -55,11 +55,17 @@ export default function VisualizarRDOPage() {
 
   if (!rdo) {
     return (
-      <div className="min-h-screen bg-[#F7F7F5] flex flex-col justify-between">
+      <div className="min-h-screen bg-[#F7F7F5] flex flex-col justify-between font-sans">
         <HeaderMobile showBack={true} backHref="/menu" title="Visualizar RDO" />
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
-          <p className="text-[#6B6B6B] text-[14px]">Relatório Diário de Obra não encontrado.</p>
-          <Button onClick={() => router.push('/menu')}>Voltar ao Menu</Button>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4">
+          <p className="text-[#6B7280] text-[15px]">Relatório Diário de Obra não encontrado.</p>
+          <button
+            type="button"
+            onClick={() => router.push('/menu')}
+            className="w-full max-w-xs h-[52px] bg-[#111111] text-white text-[15px] font-semibold rounded-none cursor-pointer"
+          >
+            Voltar ao Menu
+          </button>
         </div>
       </div>
     );
@@ -69,94 +75,137 @@ export default function VisualizarRDOPage() {
   const maquinasArr: MaquinaCheck[] = Array.isArray(rdo.maquinas) ? rdo.maquinas : [];
   const fotosArr: string[] = Array.isArray(rdo.fotos) ? rdo.fotos : [];
 
+  const dataFormatada = rdo.data
+    ? new Date(rdo.data + 'T00:00:00').toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    : '';
+
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col justify-between">
+    <div className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col justify-between font-sans">
       <HeaderMobile
         showBack={true}
         backHref="/menu"
-        title={`RDO — ${rdo.data}`}
+        title={`RDO · ${dataFormatada || rdo.data}`}
         rightBadge={rdo.status === 'enviado' ? 'Enviado' : 'Registrado'}
       />
 
-      <main className="p-6 flex-1 max-w-md w-full mx-auto space-y-6">
-        {/* Cabeçalho */}
-        <div className="border-b border-[#E5E5E3] pb-4">
-          <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-1">
-            {trechoNome || 'Trecho da Obra'} · Turno {rdo.turno}
+      <main className="p-4 flex-1 max-w-md w-full mx-auto space-y-6">
+        {/* Status em Destaque no Topo */}
+        <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+              STATUS DO RELATÓRIO
+            </span>
+            <span className="bg-[#111111] text-white text-[12px] font-medium px-2.5 py-1 rounded-none">
+              {rdo.status === 'enviado' ? 'Enviado' : 'Registrado'}
+            </span>
+          </div>
+          <div>
+            <h2 className="text-[18px] font-semibold text-[#111111] tracking-[-0.3px]">
+              {trechoNome || 'Pacote 15 e 19'}
+            </h2>
+            <p className="text-[13px] text-[#9CA3AF] mt-0.5">
+              Encarregado: {usuarioNome || 'Operador'} · Turno: {rdo.turno || 'Integral'}
+            </p>
+          </div>
+        </div>
+
+        {/* Seção 1: Clima */}
+        <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-2">
+          <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+            CONDIÇÕES CLIMÁTICAS
           </span>
-          <h2 className="text-[15px] font-medium text-[#111111]">
-            Encarregado: {usuarioNome || 'Operador'}
-          </h2>
-          <p className="text-[13px] text-[#9B9B9B] mt-0.5">
-            {rdo.data} · {rdo.clima_condicao || 'Estável'}
+          <p className="text-[15px] text-[#111111]">
+            {rdo.clima_condicao || 'Parcialmente Nublado'}
+          </p>
+          <p className="text-[13px] text-[#9CA3AF]">
+            Temperatura: {rdo.clima_temperatura || 26}°C · Umidade: {rdo.clima_umidade || 65}% · Vento: {rdo.clima_vento || 10} km/h
           </p>
         </div>
 
-        {/* Atividades */}
-        <div>
-          <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
-            ATIVIDADES DO DIA
+        {/* Seção 2: Atividades do Dia */}
+        <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-2">
+          <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+            ATIVIDADES EXECUTADAS
           </span>
-          <p className="text-[14px] text-[#111111] leading-relaxed whitespace-pre-wrap">
+          <p className="text-[15px] text-[#111111] leading-relaxed whitespace-pre-wrap">
             {rdo.atividades || 'Nenhuma atividade descrita.'}
           </p>
         </div>
 
-        {/* Equipe */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B]">
-              EQUIPE REGISTRADA
+        {/* Seção 3: Efetivo */}
+        <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+              EFETIVO REGISTRADO
             </span>
-            <span className="text-[11px] text-[#9B9B9B]">{equipeArr.length}</span>
+            <span className="text-[12px] font-medium text-[#6B7280]">
+              {equipeArr.length} colaboradores
+            </span>
           </div>
 
-          <div className="divide-y divide-[#E5E5E3]">
+          <div className="divide-y divide-[#E2E2DC] border-t border-[#E2E2DC]">
             {equipeArr.map((m, idx) => (
-              <div key={idx} className="py-2.5 flex items-center justify-between text-[13px]">
+              <div key={idx} className="py-2.5 flex items-center justify-between">
                 <div>
-                  <span className="text-[#111111] block">{m.nome}</span>
-                  <span className="text-[#9B9B9B]">{m.funcao}</span>
+                  <p className="text-[14px] font-medium text-[#111111]">{m.nome}</p>
+                  <p className="text-[12px] text-[#9CA3AF]">{m.funcao}</p>
                 </div>
-                <span className="text-[11px] text-[#9B9B9B]">Presente</span>
+                <span className="bg-[#F7F7F5] border border-[#E2E2DC] text-[#6B7280] text-[12px] font-medium px-2 py-0.5 rounded-none">
+                  Presente
+                </span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Máquinas */}
+        {/* Seção 4: Equipamentos */}
         {maquinasArr.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B]">
-                MÁQUINAS
+          <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                EQUIPAMENTOS
               </span>
-              <span className="text-[11px] text-[#9B9B9B]">{maquinasArr.length}</span>
+              <span className="text-[12px] font-medium text-[#6B7280]">
+                {maquinasArr.length} unidades
+              </span>
             </div>
 
-            <div className="divide-y divide-[#E5E5E3]">
+            <div className="divide-y divide-[#E2E2DC] border-t border-[#E2E2DC]">
               {maquinasArr.map((mq, idx) => (
-                <div key={idx} className="py-2.5 flex items-center justify-between text-[13px]">
-                  <span className="text-[#111111] capitalize">{mq.status}</span>
-                  {mq.observacao && (
-                    <span className="text-[#9B9B9B]">{mq.observacao}</span>
-                  )}
+                <div key={idx} className="py-2.5 flex items-center justify-between text-[14px]">
+                  <div>
+                    <span className="text-[#111111] font-medium capitalize block">{mq.status}</span>
+                    {mq.observacao && (
+                      <span className="text-[12px] text-[#9CA3AF] block">{mq.observacao}</span>
+                    )}
+                  </div>
+                  <span className="text-[12px] text-[#6B7280] uppercase">
+                    {mq.status === 'operando' ? 'Ativo' : 'Parado'}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Fotos */}
+        {/* Seção 5: Fotos */}
         {fotosArr.length > 0 && (
-          <div>
-            <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block mb-2">
-              FOTOS
-            </span>
+          <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                REGISTROS FOTOGRÁFICOS
+              </span>
+              <span className="text-[12px] font-medium text-[#6B7280]">
+                {fotosArr.length} fotos
+              </span>
+            </div>
             <div className="grid grid-cols-3 gap-2">
               {fotosArr.map((url, i) => (
-                <div key={i} className="aspect-square rounded-[4px] overflow-hidden border border-[#E5E5E3] bg-[#EFEFED]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                <div key={i} className="aspect-square rounded-none overflow-hidden border border-[#E2E2DC] bg-[#F7F7F5]">
                   <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
                 </div>
               ))}
@@ -165,7 +214,8 @@ export default function VisualizarRDOPage() {
         )}
       </main>
 
-      <footer className="w-full text-center py-4 text-[11px] text-[#9B9B9B] border-t border-[#E5E5E3] bg-[#F7F7F5] pb-safe">
+      {/* Rodapé Minimalista */}
+      <footer className="w-full text-center py-4 text-[12px] text-[#9CA3AF] border-t border-[#E2E2DC] bg-[#F7F7F5]">
         MetricLab · Consórcio Pacote 15 e 19
       </footer>
     </div>

@@ -9,7 +9,7 @@ export function Card({ className, flat = false, children, ...props }: CardProps)
   if (flat) {
     return (
       <div
-        className={cn('bg-transparent border-b border-[#E5E5E3] py-4', className)}
+        className={cn('bg-transparent border-b border-[#E2E2DC] py-4', className)}
         {...props}
       >
         {children}
@@ -20,7 +20,7 @@ export function Card({ className, flat = false, children, ...props }: CardProps)
   return (
     <div
       className={cn(
-        'bg-[#FFFFFF] border border-[#E5E5E3] rounded-[8px] p-5 shadow-none transition-colors',
+        'bg-white border border-[#E2E2DC] rounded-none p-4 shadow-none transition-colors',
         className
       )}
       {...props}
