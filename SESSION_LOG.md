@@ -220,5 +220,11 @@ Executadas com sucesso via PostgreSQL direto:
     - Top-left: Logo `m.` (`m` em `#111111`, `.` em `#F5A623`) + "MetricLab" em negrito.
     - Centro: Título "RDO Digital" (Inter Bold 72px `#111111`) e subtítulo "Diário de obra · Campo conectado ao painel em tempo real" (Inter Regular 28px `#6B7280`).
     - Rodapé direito: URL "rdo.metriclab.com.br" (Inter 20px `#F5A623`).
+  - **Correção de Redirecionamento e Crawlers (WhatsApp / Facebook External Hit)**:
+    - Identificado que o scraper da Meta/WhatsApp (`facebookexternalhit/1.1` e `WhatsApp/*`) era detectado como dispositivo desktop pelo middleware e recebia redirecionamento HTTP 307 para `/desktop-blocked`, impossibilitando a leitura das meta tags Open Graph e da imagem.
+    - Adicionado bypass explícito no `middleware.ts` para robôs de preview social (`WhatsApp`, `facebookexternalhit`, `Facebot`, `Twitterbot`, `LinkedInBot`, `TelegramBot`, `Slackbot`, `meta-externalagent`, `Googlebot`, etc.).
+    - Configurado `app/page.tsx` para renderizar diretamente a tela de acesso sem redirecionamento 307 no root `/`, retornando HTTP 200 diretamente para os scrapers.
+    - Adicionadas tags `og:image:secure_url`, `og:image:type`, `og:image:width`, `og:image:height` e `og:image:alt` para enriquecimento do card.
 - **Validação**:
   - Compilação e build Next.js 14 executados com sucesso (código 0).
+

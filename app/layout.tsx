@@ -33,9 +33,11 @@ export const metadata: Metadata = {
     images: [
       {
         url: 'https://rdo.metriclab.com.br/og-image.jpg',
+        secureUrl: 'https://rdo.metriclab.com.br/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'RDO Digital · MetricLab',
+        type: 'image/jpeg',
       },
     ],
     type: 'website',
@@ -70,6 +72,11 @@ export default function RootLayout({
         <meta property="og:title" content="RDO Digital · MetricLab" />
         <meta property="og:description" content="Diário de obra preenchido em campo e consolidado automaticamente no painel do supervisor. Acesse pelo celular." />
         <meta property="og:image" content="https://rdo.metriclab.com.br/og-image.jpg" />
+        <meta property="og:image:secure_url" content="https://rdo.metriclab.com.br/og-image.jpg" />
+        <meta property="og:image:type" content="image/jpeg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="RDO Digital · MetricLab" />
         <meta property="og:url" content="https://rdo.metriclab.com.br" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="MetricLab" />
