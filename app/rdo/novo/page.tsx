@@ -11,6 +11,7 @@ import {
   MaquinaCatalogo,
   MaquinaCheck,
 } from '@/types/rdo';
+import { getSession } from '@/lib/auth';
 import { Camera, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 
 export default function NovoRDOPage() {
@@ -56,14 +57,21 @@ export default function NovoRDOPage() {
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
-    const raw = localStorage.getItem('ml_rdo_session');
-    if (!raw) {
+    const s = getSession();
+    if (!s) {
       router.replace('/login');
       return;
     }
 
-    const parsed: RDOSession = JSON.parse(raw);
-    setSession(parsed);
+    const currentSession: RDOSession = {
+      usuario_id: s.usuario_id,
+      nome: s.nome,
+      trecho_id: s.trecho_id || null,
+      trecho_nome: s.trecho_nome || 'Pacote 15 e 19',
+      pacote: (s.pacote as any) || 'lote15',
+      cargo: s.cargo || 'Encarregado',
+    };
+    setSession(currentSession);
 
     supabase
       .from('demo_rdo_maquinas_catalogo')

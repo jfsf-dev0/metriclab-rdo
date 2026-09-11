@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Smartphone, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { setSession } from '@/lib/auth';
+import { setSession, clearSession } from '@/lib/auth';
 
 type Etapa = 0 | 1 | 2 | 3;
 type Metodo = 'chave' | 'codigo_unico';
@@ -22,6 +22,11 @@ function LoginCard() {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [shaking, setShaking] = useState(false);
+
+  // Ao carregar a tela de login, sempre limpa qualquer sessão anterior
+  useEffect(() => {
+    clearSession();
+  }, []);
 
   const triggerShake = (mensagem?: string) => {
     setShaking(true);

@@ -62,7 +62,27 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(blockedUrl);
   }
 
-  // 4. Proteção de autenticação
+  // 4. Ao acessar / ou /login: SEMPRE exige novo login ao abrir o PWA
+  if (pathname === '/login' || pathname === '/') {
+    const response = NextResponse.next();
+    // Limpa qualquer cookie de sessão residual
+    if (request.cookies.has('ml_rdo_session')) {
+      response.cookies.delete('ml_rdo_session');
+    }
+    if (
+      request.nextUrl.searchParams.get('mode') === 'standalone' ||
+      request.nextUrl.searchParams.get('display-mode') === 'standalone'
+    ) {
+      response.cookies.set('ml_pwa_standalone', 'true', {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365,
+        sameSite: 'lax',
+      });
+    }
+    return response;
+  }
+
+  // 5. Proteção de autenticação para rotas internas
   const isProtectedRoute =
     pathname.startsWith('/menu') ||
     pathname.startsWith('/rdo') ||
@@ -74,18 +94,6 @@ export function middleware(request: NextRequest) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
-  }
-
-  // Se já logado e acessar / ou /login, redireciona para /menu
-  if ((pathname === '/login' || pathname === '/') && sessionCookie) {
-    try {
-      const parsed = JSON.parse(decodeURIComponent(sessionCookie));
-      if (parsed && parsed.usuario_id) {
-        return NextResponse.redirect(new URL('/menu', request.url));
-      }
-    } catch {
-      // Cookie corrompido, deixa ir pro login
-    }
   }
 
   const response = NextResponse.next();

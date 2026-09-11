@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { RDOSession, RDORegistro } from '@/types/rdo';
+import { getSession, clearSession } from '@/lib/auth';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 
 export default function MenuPage() {
@@ -14,32 +15,35 @@ export default function MenuPage() {
   const [openItem, setOpenItem] = useState<'ocorrencia' | 'rdo' | null>(null);
 
   useEffect(() => {
-    const raw = localStorage.getItem('ml_rdo_session');
-    if (!raw) {
+    const s = getSession();
+    if (!s) {
       router.replace('/login');
       return;
     }
 
-    try {
-      const parsed: RDOSession = JSON.parse(raw);
-      setSession(parsed);
+    const currentSession: RDOSession = {
+      usuario_id: s.usuario_id,
+      nome: s.nome,
+      trecho_id: s.trecho_id || null,
+      trecho_nome: s.trecho_nome || 'Pacote 15 e 19',
+      pacote: (s.pacote as any) || 'lote15',
+      cargo: s.cargo || 'Encarregado',
+    };
+    setSession(currentSession);
 
-      const hoje = new Date().toISOString().split('T')[0];
-      supabase
-        .from('demo_rdo_registros')
-        .select('*')
-        .eq('usuario_id', parsed.usuario_id)
-        .eq('data', hoje)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            setHojeRDO(data[0] as RDORegistro);
-          }
-        });
-    } catch {
-      router.replace('/login');
-    }
+    const hoje = new Date().toISOString().split('T')[0];
+    supabase
+      .from('demo_rdo_registros')
+      .select('*')
+      .eq('usuario_id', s.usuario_id)
+      .eq('data', hoje)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setHojeRDO(data[0] as RDORegistro);
+        }
+      });
   }, [router]);
 
   if (!session) return null;
@@ -60,7 +64,7 @@ export default function MenuPage() {
 
   return (
     <main className="min-h-screen bg-[#F7F7F5] text-[#111111] flex flex-col justify-between">
-      {/* Header: logo | "RDO" center | "Lote [X]" */}
+      {/* Header: logo | "RDO" center | "Lote [X]" + Sair */}
       <header className="h-[52px] bg-[#F7F7F5] border-b border-[#E5E5E3] px-6 flex items-center justify-between">
         <span className="text-[20px] font-bold text-[#111111] leading-none">
           m<span className="text-[#F5A623]">.</span>
@@ -68,9 +72,20 @@ export default function MenuPage() {
         <span className="text-[16px] font-normal text-[#111111]">
           RDO
         </span>
-        <span className="text-[13px] font-normal text-[#9B9B9B]">
-          {pacoteLabel}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-[13px] font-normal text-[#9B9B9B]">
+            {pacoteLabel}
+          </span>
+          <button
+            onClick={() => {
+              clearSession();
+              router.replace('/login');
+            }}
+            className="text-[12px] font-medium text-[#6B6B6B] hover:text-[#111111] transition-colors"
+          >
+            Sair
+          </button>
+        </div>
       </header>
 
       {/* Padding 24px */}

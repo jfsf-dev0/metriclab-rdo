@@ -8,6 +8,7 @@ import {
   requestNotificationPermission,
   subscribeUserToPush,
 } from '@/lib/pushNotifications';
+import { getSession } from '@/lib/auth';
 import { PwaInstallBanner } from './PwaInstallBanner';
 
 export function PwaManager() {
@@ -66,12 +67,9 @@ export function PwaManager() {
       if (perm === 'granted') {
         let userId = 'encarregado-lote15';
         try {
-          const session = localStorage.getItem('ml_rdo_session');
-          if (session) {
-            const parsed = JSON.parse(session);
-            if (parsed.usuario_id || parsed.nome || parsed.id) {
-              userId = parsed.usuario_id || parsed.id || parsed.nome;
-            }
+          const s = getSession();
+          if (s && (s.usuario_id || s.nome)) {
+            userId = s.usuario_id || s.nome;
           }
         } catch {
           // fallback
