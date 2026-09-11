@@ -165,5 +165,20 @@ Executadas com sucesso via PostgreSQL direto:
   - Removido `max-w-md mx-auto`, `items-center` e bordas laterais simulando celular no desktop.
   - O root layout agora possui `w-full min-h-screen flex flex-col`, expandindo para 100% da largura da tela no computador com os avisos e QR Code destacados.
 
+---
+
+### Padronização de Favicons na Identidade Visual MetricLab (Fundo Claro `m.`)
+- **Estética MetricLab 2.0**:
+  - Ícone com fundo claro (`#FFFFFF`), cantos arredondados (squircle `rx="14"`), borda hairline sutil (`#E5E5E3`), letra `m` geométrica em negrito `#111111` e ponto `.` em laranja MetricLab `#F5A623`.
+  - Visibilidade perfeita tanto em abas de navegadores no modo escuro quanto no modo claro.
+- **Arquivos Gerados & Substituídos**:
+  - `public/favicon.svg` (SVG vetorial escalável para navegadores modernos).
+  - `public/favicon.ico` e `app/favicon.ico` (multi-resolução 16x16 e 32x32 para navegadores legados e Next.js App Router).
+  - `public/favicon.png` (32x32).
+  - `public/apple-touch-icon.png` (180x180 para iOS).
+  - `public/icon-192.png` e `public/icon-512.png` (resoluções PWA de alta definição substituindo os ícones azuis antigos).
+- **Metadata (`app/layout.tsx`)**:
+  - `metadata.icons` configurado com referências completas a `favicon.ico`, `favicon.svg`, `icon-192.png` e `apple-touch-icon.png`.
+
 
 
