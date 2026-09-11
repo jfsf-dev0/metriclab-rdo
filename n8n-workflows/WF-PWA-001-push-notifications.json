@@ -1,0 +1,68 @@
+{
+  "name": "WF-PWA-001 Push Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pwa-push-notification",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-pwa-push",
+      "name": "Webhook PWA Push",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 200],
+      "webhookId": "wh-pwa-push"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst data = input.body || input;\nreturn [{\n  json: {\n    received_at: new Date().toISOString(),\n    title: data.title || 'Notificação MetricLab',\n    body: data.body || '',\n    data: data.data || {},\n    source: data.source || 'pwa-rdo',\n    user_id: data.user_id || null,\n    contrato_id: data.contrato_id || 'LOTE15'\n  }\n}];"
+      },
+      "id": "format-push-payload",
+      "name": "Format Push Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"message\": \"Notificação recebida e enfileirada no N8N\",\n  \"dispatched_at\": $json.received_at,\n  \"title\": $json.title\n}"
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [540, 200]
+    }
+  ],
+  "connections": {
+    "Webhook PWA Push": {
+      "main": [
+        [
+          {
+            "node": "Format Push Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Push Payload": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -107,5 +107,35 @@ Executadas com sucesso via PostgreSQL direto:
 - **Build & Verificação**:
   - `npm run build` executado com 0 erros TypeScript.
 
+---
+
+### Implementação PWA Mobile Features (RFP: PWA-MOBILE-FEATURES-01)
+- **1. Notificações Push**:
+  - Solicitação de permissão de notificações nativas no primeiro acesso mobile via `PwaManager`.
+  - Service Worker implementado em `public/sw.js` com listeners de eventos `push` (notificação rica com vibração, ícone e badge) e `notificationclick` (abertura/foco de aba).
+  - Utilitário TypeScript `lib/pushNotifications.ts` com funções reutilizáveis:
+    - `isPushSupported()`, `getNotificationPermission()`, `requestNotificationPermission()`.
+    - `subscribeUserToPush(userId, contratoId)`: converte VAPID key para Uint8Array e registra inscrição push.
+    - `sendNotification(title, body, data)`: dispara notificação local via Service Worker e remota via API.
+  - Endpoint de API `app/api/pwa/subscription/route.ts` para persistência na tabela Supabase `pwa_subscriptions`.
+  - Migration SQL `supabase/migrations/20260910000001_create_pwa_subscriptions.sql` com schema e RLS da tabela `pwa_subscriptions (id, user_id, contrato_id, endpoint, keys, created_at, updated_at)`.
+  - Endpoint de integração `app/api/pwa/send-notification/route.ts` enviando payload para webhook do N8N (`N8N_PUSH_WEBHOOK_URL`).
+  - Workflow exportável N8N criado em `n8n-workflows/WF-PWA-001-push-notifications.json`.
+
+- **2. Bloqueio de Acesso por Computador**:
+  - Middleware Next.js (`middleware.ts`) com detecção de User-Agent desktop aplicando bloqueio estritamente nas rotas protegidas (`/rdo/*`).
+  - Exceção para PWA standalone: se acessado com `display-mode: standalone` ou cookie `ml_pwa_standalone=true` ou query param `?mode=standalone`, o acesso é liberado normalmente.
+  - Redirecionamento 307 para página dedicada `/desktop-blocked` com a mensagem exata:
+    *"Este sistema é exclusivo para acesso mobile. Acesse pelo seu celular."*
+  - Página `/desktop-blocked` desenhada no Design System MetricLab 2.0 (fundo `#F0F0F0`, card centralizado `#FFFFFF`, borda `#E5E5E3`, QR Code SVG inline escaneável para abrir o sistema no celular).
+
+- **3. Banner "Adicionar à tela inicial" (PWA Install Banner)**:
+  - Componente `components/pwa/PwaInstallBanner.tsx` capturando evento nativo do navegador `beforeinstallprompt`.
+  - Estilização estrita no Design System MetricLab 2.0: fundo `#F0F0F0`, surface card `#FFFFFF`, borda `#E5E5E3`, botão preto `#111111`, tipografia Inter, sem emojis.
+  - Exibição condicional: browser compatível com PWA, fora do modo standalone, em dispositivos mobile e não dispensado anteriormente.
+  - Suporte com instruções para iOS Safari ("Compartilhar -> Adicionar à Tela de Início").
+  - Persistência de dispensa no `localStorage` sob `ml_pwa_install_banner_dismissed`.
+  - Integração no `app/layout.tsx` através do `<PwaManager />`.
+
 
 

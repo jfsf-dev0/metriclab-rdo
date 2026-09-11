@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/toast';
+import { PwaManager } from '@/components/pwa/PwaManager';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -42,6 +43,7 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen bg-[#F5F5F5] text-gray-900 antialiased`}>
         <ToastProvider>
           <div className="min-h-screen bg-[#F5F5F5] max-w-md mx-auto relative flex flex-col sm:shadow-md sm:border-x sm:border-gray-200">
+            <PwaManager />
             {children}
           </div>
         </ToastProvider>

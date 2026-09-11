@@ -4,6 +4,26 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // 1. Bloqueio de desktop nas rotas /rdo/* (RFP: PWA-MOBILE-FEATURES-01)
+  if (pathname.startsWith('/rdo')) {
+    const userAgent = request.headers.get('user-agent') || '';
+    const isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(userAgent) ||
+      request.headers.get('sec-ch-ua-mobile') === '?1';
+
+    // Exceção: PWA instalado em modo standalone (display-mode: standalone)
+    const isStandalone =
+      request.cookies.get('ml_pwa_standalone')?.value === 'true' ||
+      request.nextUrl.searchParams.get('mode') === 'standalone' ||
+      request.nextUrl.searchParams.get('display-mode') === 'standalone';
+
+    if (!isMobile && !isStandalone) {
+      const blockedUrl = new URL('/desktop-blocked', request.url);
+      return NextResponse.redirect(blockedUrl);
+    }
+  }
+
+  // 2. Proteção de autenticação
   const isProtectedRoute =
     pathname.startsWith('/menu') ||
     pathname.startsWith('/rdo') ||
@@ -17,8 +37,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Se já logado e acessar /login ou /, redireciona para /menu
-  if ((pathname === '/login') && sessionCookie) {
+  // Se já logado e acessar /login, redireciona para /menu
+  if (pathname === '/login' && sessionCookie) {
     try {
       const parsed = JSON.parse(decodeURIComponent(sessionCookie));
       if (parsed && parsed.usuario_id) {
@@ -29,7 +49,21 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  // Se o request veio com ?mode=standalone, grava o cookie de sessão standalone
+  if (
+    request.nextUrl.searchParams.get('mode') === 'standalone' ||
+    request.nextUrl.searchParams.get('display-mode') === 'standalone'
+  ) {
+    response.cookies.set('ml_pwa_standalone', 'true', {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    });
+  }
+
+  return response;
 }
 
 export const config = {
