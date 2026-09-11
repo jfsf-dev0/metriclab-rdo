@@ -180,5 +180,19 @@ Executadas com sucesso via PostgreSQL direto:
 - **Metadata (`app/layout.tsx`)**:
   - `metadata.icons` configurado com referências completas a `favicon.ico`, `favicon.svg`, `icon-192.png` e `apple-touch-icon.png`.
 
+---
+
+### Unificação do Fluxo e Padrão de Acesso PWA (4 Etapas Progressivas em Tela Única)
+- **Eliminação de Splash Separada (`app/page.tsx`)**:
+  - Substituída a tela de splash duplicada por redirecionamento direto (`redirect('/login')`), unificando 100% o ponto de entrada da aplicação.
+- **Refatoração do Login (`app/login/page.tsx`)**:
+  - Implementado o mesmo padrão arquitetural e visual de Vistoria Cautelar com 4 etapas progressivas dentro de card centralizado único:
+    - **Etapa 0 (Entrada)**: Logo `m.` (28px bold, ponto `#F5A623`), título "Relatório Diário de Obra" (22px bold `#111111`), subtítulo "Pacote 15 e 19" (13px `#9B9B9B`) e botão "Entrar" full-width.
+    - **Etapa 1 (Identificador)**: Input underline sem caixa com placeholder `seu@email.com, telefone ou usuário` e link "← Voltar".
+    - **Etapa 2 (Seleção de Método)**: Exibição automática ao digitar de dois botões de método: "Entrar com chave" (ícone Lock) e "Código único" (ícone Smartphone).
+    - **Etapa 3 (Validação de Código)**: Campo com código de 6 dígitos, suporte ao bypass demo `123456` e códigos `RDO*`, e consulta à tabela `demo_rdo_usuarios` no Supabase com shake animation em caso de falha.
+- **Utilitário de Autenticação (`lib/auth.ts`)**:
+  - Criado helper tipado unificado `UserSession`, `getSession()`, `setSession()` e `clearSession()`, persistindo simultaneamente no `localStorage` e cookies HTTP com SameSite Lax.
+
 
 

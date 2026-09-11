@@ -1,19 +1,24 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Smartphone, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { setSession } from '@/lib/auth';
 
-type Estado = 'inicial' | 'chave' | 'codigo_unico';
+type Etapa = 0 | 1 | 2 | 3;
+type Metodo = 'chave' | 'codigo_unico';
 
-function LoginContent() {
+function LoginCard() {
   const router = useRouter();
+  const inputIdentificadorRef = useRef<HTMLInputElement>(null);
+  const inputCodigoRef = useRef<HTMLInputElement>(null);
 
-  const [estado, setEstado] = useState<Estado>('inicial');
-  const [nome, setNome] = useState('');
-  const [chaveAcesso, setChaveAcesso] = useState('');
-  const [codigoOtp, setCodigoOtp] = useState('');
+  const [etapa, setEtapa] = useState<Etapa>(0);
+  const [metodo, setMetodo] = useState<Metodo>('chave');
+
+  const [identificador, setIdentificador] = useState('');
+  const [codigo, setCodigo] = useState('');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -24,165 +29,127 @@ function LoginContent() {
     setTimeout(() => setShaking(false), 450);
   };
 
+  // Foco automático nos campos conforme a etapa avança
+  useEffect(() => {
+    if (etapa === 1 || etapa === 2) {
+      setTimeout(() => {
+        inputIdentificadorRef.current?.focus();
+      }, 50);
+    } else if (etapa === 3) {
+      setTimeout(() => {
+        inputCodigoRef.current?.focus();
+      }, 50);
+    }
+  }, [etapa]);
+
+  // Transição automática entre Etapa 1 e Etapa 2 ao digitar
+  const handleIdentificadorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setIdentificador(val);
+    setErro(null);
+
+    if (val.trim().length > 0) {
+      setEtapa(2);
+    } else {
+      setEtapa(1);
+    }
+  };
+
+  // Escolha do método (avança para Etapa 3)
+  const handleEscolherMetodo = (m: Metodo) => {
+    setMetodo(m);
+    setCodigo('');
+    setErro(null);
+    setEtapa(3);
+  };
+
+  // Voltar etapas progressivas
   const handleVoltar = () => {
-    setEstado('inicial');
-    setChaveAcesso('');
-    setCodigoOtp('');
     setErro(null);
-  };
-
-  const saveSession = (sessionData: {
-    usuario_id: string;
-    nome: string;
-    trecho_id: string;
-    trecho_nome: string;
-    pacote: string;
-    cargo: string;
-  }) => {
-    localStorage.setItem('ml_rdo_session', JSON.stringify(sessionData));
-    document.cookie = `ml_rdo_session=${encodeURIComponent(
-      JSON.stringify(sessionData)
-    )}; path=/; max-age=604800; SameSite=Lax`;
-  };
-
-  // ESTADO 2A: Validação com Nome e Chave
-  const handleEntrarComChave = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setErro(null);
-
-    const nomeLimpo = nome.trim();
-    const chaveLimpa = chaveAcesso.trim();
-
-    if (!nomeLimpo) {
-      triggerShake('Informe seu nome completo.');
-      return;
+    if (etapa === 3) {
+      setCodigo('');
+      setEtapa(2);
+    } else if (etapa === 2 || etapa === 1) {
+      setIdentificador('');
+      setCodigo('');
+      setEtapa(0);
     }
+  };
 
-    if (!chaveLimpa) {
-      triggerShake('Informe a chave de acesso.');
+  // Submissão da Etapa 3
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (loading) return;
+
+    setErro(null);
+    const inputLimpo = identificador.trim();
+    const codigoLimpo = codigo.trim();
+
+    if (codigoLimpo.length !== 6 && !codigoLimpo.toUpperCase().startsWith('RDO')) {
+      triggerShake('Digite o código de 6 dígitos.');
       return;
     }
 
     setLoading(true);
 
+    // 1. Bypass Oficial Demo: 123456 ou RDO*
     const isDemo =
-      chaveLimpa === '123456' ||
-      chaveLimpa.toUpperCase().startsWith('RDO');
+      codigoLimpo === '123456' ||
+      codigoLimpo.toUpperCase().startsWith('RDO');
 
-    try {
-      const { data, error } = await supabase
-        .from('demo_rdo_usuarios')
-        .select('*')
-        .ilike('nome', `%${nomeLimpo}%`)
-        .eq('chave_acesso', chaveLimpa)
-        .eq('ativo', true)
-        .limit(1);
-
-      if (data && data.length > 0) {
-        const user = data[0];
-        saveSession({
-          usuario_id: user.id,
-          nome: user.nome,
-          trecho_id: user.trecho_id,
-          trecho_nome: user.trecho_nome || 'Trecho Geral',
-          pacote: user.pacote || '15 e 19',
-          cargo: user.cargo || 'Encarregado',
-        });
-        router.push('/menu');
-        return;
-      }
-
-      // Bypass Demo caso chave seja 123456 ou comece com RDO
-      if (isDemo) {
-        saveSession({
-          usuario_id: `demo-${chaveLimpa}`,
-          nome: nomeLimpo,
-          trecho_id: 'trecho-15-19',
-          trecho_nome: 'Pacote 15 e 19',
-          pacote: '15 e 19',
-          cargo: 'Encarregado de Obra',
-        });
-        router.push('/menu');
-        return;
-      }
-
-      setLoading(false);
-      triggerShake('Chave inválida');
-    } catch (err) {
-      console.error('[handleEntrarComChave]', err);
-      if (isDemo) {
-        saveSession({
-          usuario_id: `demo-${chaveLimpa}`,
-          nome: nomeLimpo,
-          trecho_id: 'trecho-15-19',
-          trecho_nome: 'Pacote 15 e 19',
-          pacote: '15 e 19',
-          cargo: 'Encarregado de Obra',
-        });
-        router.push('/menu');
-        return;
-      }
-      setLoading(false);
-      triggerShake('Chave inválida');
-    }
-  };
-
-  // ESTADO 2B: Validação com Código Único (Demo 123456)
-  const handleConfirmarCodigoUnico = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setErro(null);
-
-    const nomeLimpo = nome.trim();
-    const codigoLimpo = codigoOtp.trim();
-
-    if (!codigoLimpo) {
-      triggerShake('Digite o código recebido.');
-      return;
-    }
-
-    setLoading(true);
-
-    // Aceita 123456 para qualquer input
-    if (codigoLimpo === '123456') {
-      saveSession({
-        usuario_id: 'demo-otp-user',
-        nome: nomeLimpo || 'Encarregado Demo',
-        trecho_id: 'trecho-15-19',
+    if (isDemo) {
+      setSession({
+        usuario_id: 'demo-usuario-123456',
+        nome: inputLimpo || 'Engenheiro de Campo — RDO',
+        trecho_id: 'trecho-01',
         trecho_nome: 'Pacote 15 e 19',
         pacote: '15 e 19',
-        cargo: 'Encarregado de Obra',
+        cargo: 'Responsável Técnico',
       });
       router.push('/menu');
       return;
     }
 
-    // Busca se existe chave correspondente no banco
+    // 2. Validação no Supabase na tabela demo_rdo_usuarios
     try {
-      const { data } = await supabase
+      const isEmail = inputLimpo.includes('@');
+      let query = supabase
         .from('demo_rdo_usuarios')
         .select('*')
         .eq('chave_acesso', codigoLimpo)
-        .eq('ativo', true)
-        .limit(1);
+        .eq('ativo', true);
 
-      if (data && data.length > 0) {
-        const user = data[0];
-        saveSession({
-          usuario_id: user.id,
-          nome: user.nome,
-          trecho_id: user.trecho_id,
-          trecho_nome: user.trecho_nome || 'Trecho Geral',
-          pacote: user.pacote || '15 e 19',
-          cargo: user.cargo || 'Encarregado',
-        });
-        router.push('/menu');
+      if (isEmail) {
+        query = query.eq('email', inputLimpo.toLowerCase());
+      } else if (inputLimpo) {
+        const cleanDigits = inputLimpo.replace(/\D/g, '');
+        if (cleanDigits.length >= 8) {
+          query = query.ilike('telefone', `%${cleanDigits}%`);
+        } else {
+          query = query.ilike('nome', `%${inputLimpo}%`);
+        }
+      }
+
+      const { data, error } = await query.maybeSingle();
+
+      if (error || !data) {
+        setLoading(false);
+        triggerShake('Código inválido');
         return;
       }
 
-      setLoading(false);
-      triggerShake('Código inválido');
+      setSession({
+        usuario_id: data.id || data.usuario_id || 'user-rdo',
+        nome: data.nome || inputLimpo,
+        trecho_id: data.trecho_id || 'trecho-01',
+        trecho_nome: data.trecho_nome || 'Pacote 15 e 19',
+        pacote: data.pacote || '15 e 19',
+        cargo: data.cargo || 'Encarregado de Obra',
+      });
+
+      router.push('/menu');
     } catch (err) {
-      console.error('[handleConfirmarCodigoUnico]', err);
+      console.error('[handleSubmit error]', err);
       setLoading(false);
       triggerShake('Código inválido');
     }
@@ -190,18 +157,27 @@ function LoginContent() {
 
   return (
     <div
-      className={`w-full max-w-[380px] bg-white rounded-[12px] border border-[#E5E5E3] p-8 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 ease-in-out ${
+      style={{
+        width: 'calc(100% - 48px)',
+        maxWidth: '380px',
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+      }}
+      className={`bg-white rounded-[16px] border border-[#E5E5E3] px-7 py-8 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 ease-in-out select-none ${
         shaking ? 'animate-shake' : ''
       }`}
     >
-      {/* Logo */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          CABEÇALHO DO CARD (FIXO)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <div className="text-center">
-        <span className="text-[28px] font-bold text-[#111111] leading-none tracking-tight select-none">
+        <span className="text-[28px] font-bold text-[#111111] leading-none tracking-tight">
           m<span className="text-[#F5A623]">.</span>
         </span>
       </div>
 
-      {/* Título e Subtítulo */}
       <div className="text-center mt-4">
         <h1 className="text-[22px] font-bold text-[#111111] leading-tight">
           Relatório Diário de Obra
@@ -212,20 +188,32 @@ function LoginContent() {
       </div>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          ESTADO 1 — INICIAL
+          ETAPA 0 — ESTADO INICIAL
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {estado === 'inicial' && (
+      {etapa === 0 && (
+        <div className="mt-8 animate-in fade-in-0 duration-200">
+          <button
+            type="button"
+            onClick={() => setEtapa(1)}
+            className="w-full h-[44px] bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[8px] transition-colors cursor-pointer flex items-center justify-center"
+          >
+            Entrar
+          </button>
+        </div>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ETAPA 1 & ETAPA 2 — CAMPO IDENTIFICADOR
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {(etapa === 1 || etapa === 2) && (
         <div className="mt-6 space-y-5 animate-in fade-in-0 duration-200">
           <div>
             <input
+              ref={inputIdentificadorRef}
               type="text"
-              value={nome}
-              onChange={(e) => {
-                setNome(e.target.value);
-                setErro(null);
-              }}
-              placeholder="Seu nome completo"
-              autoFocus
+              value={identificador}
+              onChange={handleIdentificadorChange}
+              placeholder="seu@email.com, telefone ou usuário"
               className="w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2.5 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] focus:border-[#111111] focus:outline-none transition-colors"
             />
           </div>
@@ -236,131 +224,45 @@ function LoginContent() {
             </p>
           )}
 
-          {/* Dois botões lado a lado */}
-          <div className="flex gap-2">
+          {/* ETAPA 1: Botão Entrar desabilitado antes de digitar */}
+          {etapa === 1 && (
             <button
               type="button"
-              onClick={() => {
-                setEstado('chave');
-                setErro(null);
-              }}
-              className="flex-1 h-[44px] bg-white border border-[#E5E5E3] rounded-[8px] inline-flex items-center justify-center gap-2 hover:bg-[#F9F9F8] transition-colors cursor-pointer select-none"
+              disabled
+              className="w-full h-[44px] bg-[#111111] text-white text-[14px] font-medium rounded-[8px] opacity-40 cursor-not-allowed flex items-center justify-center"
             >
-              <Lock className="w-4 h-4 text-[#111111]" />
-              <span className="text-[13px] font-medium text-[#111111]">
-                Entrar com chave
-              </span>
+              Entrar
             </button>
+          )}
 
-            <button
-              type="button"
-              onClick={() => {
-                setEstado('codigo_unico');
-                setErro(null);
-              }}
-              className="flex-1 h-[44px] bg-white border border-[#E5E5E3] rounded-[8px] inline-flex items-center justify-center gap-2 hover:bg-[#F9F9F8] transition-colors cursor-pointer select-none"
-            >
-              <Smartphone className="w-4 h-4 text-[#111111]" />
-              <span className="text-[13px] font-medium text-[#111111]">
-                Código único
-              </span>
-            </button>
-          </div>
+          {/* ETAPA 2: Dois botões de método ao digitar */}
+          {etapa === 2 && (
+            <div className="flex gap-2 animate-in fade-in-0 duration-200">
+              <button
+                type="button"
+                onClick={() => handleEscolherMetodo('chave')}
+                className="flex-1 h-[44px] bg-white border border-[#E5E5E3] rounded-[8px] inline-flex items-center justify-center gap-2 hover:bg-[#F9F9F8] transition-colors cursor-pointer"
+              >
+                <Lock className="w-4 h-4 text-[#111111]" />
+                <span className="text-[13px] font-medium text-[#111111]">
+                  Entrar com chave
+                </span>
+              </button>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-[#E5E5E3]" />
-            <span className="text-[12px] text-[#9B9B9B]">ou</span>
-            <div className="flex-1 h-px bg-[#E5E5E3]" />
-          </div>
-
-          {/* Botão Entrar preto full-width */}
-          <button
-            type="button"
-            onClick={() => {
-              setEstado('chave');
-              setErro(null);
-            }}
-            className="w-full h-[44px] bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[8px] transition-colors cursor-pointer flex items-center justify-center"
-          >
-            Entrar
-          </button>
-
-          {/* Rodapé Demo */}
-          <p className="text-[11px] text-[#C4C4C2] text-center mt-4">
-            Demo: use o código 123456 ou RDO001
-          </p>
-        </div>
-      )}
-
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          ESTADO 2A — ENTRAR COM CHAVE
-          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {estado === 'chave' && (
-        <form
-          onSubmit={handleEntrarComChave}
-          className="mt-6 space-y-5 animate-in fade-in-0 duration-200"
-        >
-          {/* Mantém campo nome */}
-          <div>
-            <input
-              type="text"
-              value={nome}
-              onChange={(e) => {
-                setNome(e.target.value);
-                setErro(null);
-              }}
-              placeholder="Seu nome completo"
-              className="w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2.5 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] focus:border-[#111111] focus:outline-none transition-colors"
-            />
-          </div>
-
-          {/* Novo campo: Chave de Acesso */}
-          <div>
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block">
-                CHAVE DE ACESSO (EX: RDO001)
-              </label>
-              <span className="text-[10px] text-[#C4C4C2]">
-                Demo: 123456 ou RDO001
-              </span>
+              <button
+                type="button"
+                onClick={() => handleEscolherMetodo('codigo_unico')}
+                className="flex-1 h-[44px] bg-white border border-[#E5E5E3] rounded-[8px] inline-flex items-center justify-center gap-2 hover:bg-[#F9F9F8] transition-colors cursor-pointer"
+              >
+                <Smartphone className="w-4 h-4 text-[#111111]" />
+                <span className="text-[13px] font-medium text-[#111111]">
+                  Código único
+                </span>
+              </button>
             </div>
-            <input
-              type="password"
-              maxLength={10}
-              value={chaveAcesso}
-              onChange={(e) => {
-                setChaveAcesso(e.target.value);
-                setErro(null);
-              }}
-              placeholder="••••••"
-              autoFocus
-              className="w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2 text-[15px] text-[#111111] tracking-[4px] placeholder:text-[#9B9B9B] focus:border-[#111111] focus:outline-none transition-colors"
-            />
-            {erro && (
-              <p className="text-[12px] text-[#dc2626] font-medium mt-1.5">
-                {erro}
-              </p>
-            )}
-          </div>
+          )}
 
-          {/* Botão Entrar */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-[44px] bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[8px] transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Entrando...</span>
-              </>
-            ) : (
-              'Entrar'
-            )}
-          </button>
-
-          {/* Link Voltar */}
+          {/* Link Voltar → Volta para etapa 0 */}
           <div className="text-center pt-1">
             <button
               type="button"
@@ -370,64 +272,65 @@ function LoginContent() {
               ← Voltar
             </button>
           </div>
-        </form>
+        </div>
       )}
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          ESTADO 2B — CÓDIGO ÚNICO
+          ETAPA 3 — CAMPO CÓDIGO 6 DÍGITOS
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {estado === 'codigo_unico' && (
+      {etapa === 3 && (
         <form
-          onSubmit={handleConfirmarCodigoUnico}
+          onSubmit={handleSubmit}
           className="mt-6 space-y-5 animate-in fade-in-0 duration-200"
         >
-          {nome.trim() ? (
+          {metodo === 'codigo_unico' && identificador.trim() ? (
             <div className="text-center">
               <p className="text-[13px] text-[#6B6B6B]">
                 Enviamos um código para
               </p>
               <p className="text-[13px] font-medium text-[#111111] mt-0.5 truncate">
-                {nome}
+                {identificador}
               </p>
             </div>
           ) : (
-            <div>
-              <input
-                type="text"
-                value={nome}
-                onChange={(e) => {
-                  setNome(e.target.value);
-                  setErro(null);
-                }}
-                placeholder="Seu nome completo"
-                className="w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2.5 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] focus:border-[#111111] focus:outline-none transition-colors"
-              />
+            <div className="text-center">
+              <p className="text-[12px] text-[#9B9B9B] truncate">
+                {identificador}
+              </p>
             </div>
           )}
 
-          {/* Campo Código Recebido */}
+          {/* Campo de Código 6 Dígitos */}
           <div>
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-medium uppercase tracking-[0.5px] text-[#9B9B9B] block">
-                CÓDIGO RECEBIDO
+                {metodo === 'chave'
+                  ? 'CÓDIGO DE ACESSO (6 DÍGITOS)'
+                  : 'CÓDIGO RECEBIDO'}
               </label>
               <span className="text-[10px] text-[#C4C4C2]">
-                Demo: use o código 123456
+                Demo: 123456
               </span>
             </div>
+
             <input
-              type="text"
+              ref={inputCodigoRef}
+              type={metodo === 'chave' ? 'password' : 'text'}
               maxLength={6}
-              value={codigoOtp}
+              value={codigo}
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, '');
-                setCodigoOtp(val);
+                setCodigo(val);
                 setErro(null);
               }}
-              placeholder="000000"
-              autoFocus
-              className="w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2 text-[15px] text-[#111111] tracking-[6px] placeholder:text-[#C4C4C2] focus:border-[#111111] focus:outline-none transition-colors text-center"
+              placeholder={metodo === 'chave' ? '••••••' : '000000'}
+              className={`w-full border-0 border-b border-[#E5E5E3] bg-transparent py-2 text-[15px] text-[#111111] placeholder:text-[#9B9B9B] focus:border-[#111111] focus:outline-none transition-colors ${
+                metodo === 'chave'
+                  ? 'tracking-[4px]'
+                  : 'tracking-[6px] text-center'
+              }`}
             />
+
             {erro && (
               <p className="text-[12px] text-[#dc2626] font-medium mt-1.5 text-center">
                 {erro}
@@ -435,23 +338,31 @@ function LoginContent() {
             )}
           </div>
 
-          {/* Botão Confirmar */}
+          {/* Botão Entrar / Confirmar (ativo somente com 6 dígitos) */}
           <button
             type="submit"
-            disabled={loading}
-            className="w-full h-[44px] bg-[#111111] hover:bg-black text-white text-[14px] font-medium rounded-[8px] transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+            disabled={codigo.length !== 6 || loading}
+            className={`w-full h-[44px] bg-[#111111] text-white text-[14px] font-medium rounded-[8px] transition-all flex items-center justify-center gap-2 ${
+              codigo.length === 6 && !loading
+                ? 'hover:bg-black cursor-pointer opacity-100'
+                : 'opacity-40 cursor-not-allowed'
+            }`}
           >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Confirmando...</span>
+                <span>
+                  {metodo === 'chave' ? 'Entrando...' : 'Confirmando...'}
+                </span>
               </>
+            ) : metodo === 'chave' ? (
+              'Entrar'
             ) : (
               'Confirmar'
             )}
           </button>
 
-          {/* Link Voltar */}
+          {/* Link Voltar → Volta para Etapa 2 */}
           <div className="text-center pt-1">
             <button
               type="button"
@@ -469,13 +380,23 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-[#F0F0F0] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#F0F0F0] relative overflow-hidden">
       <Suspense
         fallback={
-          <div className="w-full max-w-[380px] h-[340px] bg-white rounded-[12px] border border-[#E5E5E3] p-8 animate-pulse" />
+          <div
+            style={{
+              width: 'calc(100% - 48px)',
+              maxWidth: '380px',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+            className="h-[220px] bg-white rounded-[16px] border border-[#E5E5E3] p-7 animate-pulse"
+          />
         }
       >
-        <LoginContent />
+        <LoginCard />
       </Suspense>
     </div>
   );
