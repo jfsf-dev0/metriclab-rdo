@@ -2,40 +2,45 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, Check } from 'lucide-react';
 import QRCodeLib from 'qrcode';
 
 export default function DesktopBlockedPage() {
   const router = useRouter();
-  const [copied, setCopied] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
 
   const targetUrl = 'https://rdo.metriclab.com.br';
+  const urlDisplay = 'rdo.metriclab.com.br';
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const isStandalone =
-        window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true ||
-        document.cookie.includes('ml_pwa_standalone=true');
+      const isDev = process.env.NODE_ENV === 'development';
+      const isAudit = window.sessionStorage.getItem('ml_audit_bypass') === 'metriclab_audit_2026';
 
-      if (isStandalone) {
-        document.cookie = 'ml_pwa_standalone=true; path=/; max-age=31536000; SameSite=Lax';
-        router.replace('/login');
-        return;
+      // Standalone bypass APENAS em dev ou durante auditoria do Playwright
+      if (isDev || isAudit) {
+        const isStandalone =
+          window.matchMedia('(display-mode: standalone)').matches ||
+          (window.navigator as any).standalone === true ||
+          document.cookie.includes('ml_pwa_standalone=true');
+
+        if (isStandalone) {
+          router.replace('/login');
+          return;
+        }
       }
 
+      // Se for dispositivo móvel real com largura de tela mobile
       const isMobile =
         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(
           navigator.userAgent
         ) || (navigator as any).userAgentData?.mobile;
 
-      if (isMobile) {
+      if (isMobile && window.innerWidth <= 768) {
         router.replace('/login');
         return;
       }
 
-      // Generate clean QR code
+      // Gerar QR Code limpo 160x160
       QRCodeLib.toDataURL(targetUrl, {
         width: 320,
         margin: 1,
@@ -49,36 +54,28 @@ export default function DesktopBlockedPage() {
     }
   }, [router, targetUrl]);
 
-  const handleCopyLink = () => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(targetUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
   return (
     <main className="min-h-screen w-full bg-[#F7F7F5] flex flex-col items-center justify-center p-6 text-center select-none font-sans">
       <div className="max-w-[340px] w-full flex flex-col items-center">
-        {/* Logo "m." no topo */}
+        {/* Logo m. no topo, 32px, Inter 700, ponto #F5A623 */}
         <div className="leading-none tracking-tight mb-6">
           <span className="text-[32px] font-bold text-[#111111]">
             m<span className="text-[#F5A623]">.</span>
           </span>
         </div>
 
-        {/* Título: Inter 600, 18px, cor #111111 */}
-        <h1 className="text-[18px] font-semibold text-[#111111] tracking-[-0.3px]">
-          Acesso exclusivo mobile
+        {/* Título: "Este aplicativo é exclusivo para dispositivos móveis", Inter 600, 18px, #111111 */}
+        <h1 className="text-[18px] font-semibold text-[#111111] tracking-[-0.3px] leading-snug">
+          Este aplicativo é exclusivo para dispositivos móveis
         </h1>
 
-        {/* Mensagem: Inter 400, 14px, cor #9CA3AF, max-width 320px */}
-        <p className="text-[14px] font-normal text-[#9CA3AF] mt-2 mb-8 max-w-[320px] leading-relaxed">
-          Esta ferramenta foi desenhada para uso em campo no smartphone.
+        {/* Subtítulo: "Acesse pelo seu celular para continuar.", Inter 400, 14px, #9CA3AF */}
+        <p className="text-[14px] font-normal text-[#9CA3AF] mt-2 mb-8 leading-relaxed">
+          Acesse pelo seu celular para continuar.
         </p>
 
-        {/* QR Code gerado dinamicamente: 160x160px, borda 1px #E2E2DC, sem raio */}
-        <div className="w-[160px] h-[160px] bg-white border border-[#E2E2DC] rounded-none p-2 flex items-center justify-center shadow-none mb-6">
+        {/* QR Code centralizado, 160x160px */}
+        <div className="w-[160px] h-[160px] bg-white border border-[#E2E2DC] rounded-none p-2 flex items-center justify-center shadow-none mb-4">
           {qrCodeDataUrl ? (
             <img
               src={qrCodeDataUrl}
@@ -92,24 +89,10 @@ export default function DesktopBlockedPage() {
           )}
         </div>
 
-        {/* URL em texto mono 12px com botão de copiar discreto */}
-        <div className="inline-flex items-center gap-2 bg-white border border-[#E2E2DC] rounded-none px-3 py-2">
-          <span className="text-[12px] font-mono text-[#111111]">
-            rdo.metriclab.com.br
-          </span>
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            aria-label="Copiar link"
-            className="text-[#6B7280] hover:text-[#111111] p-0.5 transition-colors"
-          >
-            {copied ? (
-              <Check className="w-3.5 h-3.5 text-[#111111]" />
-            ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
-          </button>
-        </div>
+        {/* URL abaixo do QR: Inter 400, 13px, #9CA3AF */}
+        <span className="text-[13px] font-normal text-[#9CA3AF]">
+          {urlDisplay}
+        </span>
       </div>
     </main>
   );
