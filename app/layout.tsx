@@ -34,15 +34,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} bg-[#F5F5F5]`}>
+    <html lang="pt-BR" className={`${inter.variable} bg-[#F0F0F0]`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
-      <body className={`${inter.className} min-h-screen bg-[#F5F5F5] text-gray-900 antialiased`}>
+      <body className={`${inter.className} min-h-screen bg-[#F0F0F0] text-[#111111] antialiased flex flex-col w-full selection:bg-neutral-200 selection:text-neutral-900`}>
         <ToastProvider>
-          <div className="min-h-screen bg-[#F5F5F5] max-w-md mx-auto relative flex flex-col sm:shadow-md sm:border-x sm:border-gray-200">
+          <div className="w-full min-h-screen relative flex flex-col">
             <PwaManager />
             {children}
           </div>
