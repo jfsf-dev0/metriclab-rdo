@@ -55,6 +55,10 @@ export interface RDORegistro {
   clima_capturado_em?: string;
   geolat?: number;
   geolng?: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  accuracy?: number | null;
+  geolocated_at?: string;
   atividades?: string;
   equipe?: EquipeMembro[];
   maquinas?: MaquinaCheck[];
@@ -76,6 +80,10 @@ export interface RDOOcorrencia {
   fotos?: string[];
   geolat?: number;
   geolng?: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  accuracy?: number | null;
+  geolocated_at?: string;
   status?: 'aberta' | 'em_analise' | 'encerrada';
   created_at?: string;
 }
