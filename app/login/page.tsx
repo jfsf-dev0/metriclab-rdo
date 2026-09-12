@@ -162,33 +162,25 @@ function LoginCard() {
 
   return (
     <div
-      style={{
-        width: 'calc(100% - 48px)',
-        maxWidth: '380px',
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-      }}
-      className={`bg-white rounded-none border border-[#E2E2DC] px-6 py-8 shadow-none select-none ${
+      className={`w-full max-w-[420px] bg-white border border-[#E2E2DC] rounded-[16px] p-8 sm:p-10 shadow-sm select-none ${
         shaking ? 'animate-shake' : ''
       }`}
     >
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           CABEÇALHO DO CARD (FIXO)
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div className="text-center">
-        <span className="text-[28px] font-bold text-[#111111] leading-none tracking-tight">
+      <div className="text-center mb-6">
+        <span className="text-[32px] font-bold text-[#111111] leading-none tracking-tight font-sans">
           m<span className="text-[#F5A623]">.</span>
         </span>
       </div>
 
-      <div className="text-center mt-4">
-        <h1 className="text-[18px] font-semibold text-[#111111] leading-tight tracking-[-0.3px]">
-          Acesso
+      <div className="text-center mb-8">
+        <h1 className="text-[20px] font-semibold text-[#111111] tracking-[-0.3px]">
+          RDO Digital
         </h1>
-        <p className="text-[13px] font-normal text-[#9CA3AF] mt-1">
-          Informe seu telefone cadastrado
+        <p className="text-[13px] font-normal text-[#9CA3AF] mt-1.5">
+          Acesso restrito · Demo Lote 15 e 19
         </p>
       </div>
 
@@ -196,11 +188,11 @@ function LoginCard() {
           ETAPA 0 — ESTADO INICIAL
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {etapa === 0 && (
-        <div className="mt-8 animate-in fade-in-0 duration-200">
+        <div className="mt-6 animate-in fade-in-0 duration-200">
           <button
             type="button"
             onClick={() => setEtapa(1)}
-            className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-none transition-opacity cursor-pointer flex items-center justify-center"
+            className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-[8px] transition-colors cursor-pointer flex items-center justify-center"
           >
             Entrar
           </button>
@@ -222,12 +214,12 @@ function LoginCard() {
               value={identificador}
               onChange={handleIdentificadorChange}
               placeholder="+55 (11) 9XXXX-XXXX"
-              className="w-full h-[48px] bg-white border border-[#E2E2DC] rounded-none px-4 py-3.5 text-[15px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-[#111111] focus:outline-none transition-colors"
+              className="w-full h-[52px] bg-white border border-[#E2E2DC] rounded-[8px] px-4 text-[15px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
             />
           </div>
 
           {erro && (
-            <p className="text-[12px] text-[#DC2626] font-medium text-center">
+            <p className="text-[13px] text-red-500 font-normal text-center mt-2">
               {erro}
             </p>
           )}
@@ -237,7 +229,7 @@ function LoginCard() {
             <button
               type="button"
               disabled
-              className="w-full h-[52px] bg-[#111111] text-white text-[15px] font-semibold rounded-none opacity-40 cursor-not-allowed flex items-center justify-center"
+              className="w-full h-[52px] bg-[#111111] text-white text-[15px] font-semibold rounded-[8px] opacity-40 cursor-not-allowed flex items-center justify-center"
             >
               Entrar
             </button>
@@ -249,7 +241,7 @@ function LoginCard() {
               <button
                 type="button"
                 onClick={() => handleEscolherMetodo('chave')}
-                className="flex-1 h-[52px] bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-none inline-flex items-center justify-center gap-2 hover:bg-[#F7F7F5] transition-colors cursor-pointer"
+                className="flex-1 h-[52px] bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-[8px] inline-flex items-center justify-center gap-2 hover:bg-[#F7F7F5] transition-colors cursor-pointer"
               >
                 <Lock className="w-4 h-4 text-[#111111]" />
                 <span className="text-[13px] font-medium text-[#111111]">
@@ -260,7 +252,7 @@ function LoginCard() {
               <button
                 type="button"
                 onClick={() => handleEscolherMetodo('codigo_unico')}
-                className="flex-1 h-[52px] bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-none inline-flex items-center justify-center gap-2 hover:bg-[#F7F7F5] transition-colors cursor-pointer"
+                className="flex-1 h-[52px] bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-[8px] inline-flex items-center justify-center gap-2 hover:bg-[#F7F7F5] transition-colors cursor-pointer"
               >
                 <Smartphone className="w-4 h-4 text-[#111111]" />
                 <span className="text-[13px] font-medium text-[#111111]">
@@ -332,7 +324,7 @@ function LoginCard() {
                 setErro(null);
               }}
               placeholder={metodo === 'chave' ? '••••••' : '000000'}
-              className={`w-full h-[48px] bg-white border border-[#E2E2DC] rounded-none px-4 text-[16px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-[#111111] focus:outline-none transition-colors ${
+              className={`w-full h-[52px] bg-white border border-[#E2E2DC] rounded-[8px] px-4 text-[16px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all ${
                 metodo === 'chave'
                   ? 'tracking-[6px]'
                   : 'tracking-[8px] text-center'
@@ -340,7 +332,7 @@ function LoginCard() {
             />
 
             {erro && (
-              <p className="text-[12px] text-[#DC2626] font-medium mt-1.5 text-center">
+              <p className="text-[13px] text-red-500 font-normal mt-2 text-center">
                 {erro}
               </p>
             )}
@@ -350,7 +342,7 @@ function LoginCard() {
           <button
             type="submit"
             disabled={codigo.length !== 6 || loading}
-            className={`w-full h-[52px] bg-[#111111] text-white text-[15px] font-semibold rounded-none transition-all flex items-center justify-center gap-2 ${
+            className={`w-full h-[52px] bg-[#111111] text-white text-[15px] font-semibold rounded-[8px] transition-all flex items-center justify-center gap-2 ${
               codigo.length === 6 && !loading
                 ? 'hover:bg-black active:opacity-85 cursor-pointer opacity-100'
                 : 'opacity-40 cursor-not-allowed'
@@ -384,15 +376,22 @@ function LoginCard() {
       )}
 
       {/* Link de Ajuda */}
-      <div className="text-center mt-6 pt-4 border-t border-[#E2E2DC]">
+      <div className="text-center mt-6 pt-4 border-t border-[#E2E2DC]/60">
         <a
           href="https://wa.me/5511952137598"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[13px] text-[#6B7280] hover:text-[#111111] transition-colors"
+          className="text-[12px] text-[#6B7280] hover:text-[#111111] transition-colors"
         >
           Problemas com o acesso? Fale com o suporte
         </a>
+      </div>
+
+      {/* Powered by MetricLab no rodapé */}
+      <div className="text-center mt-4">
+        <p className="text-[12px] text-[#9CA3AF]">
+          Powered by <span className="text-[#F5A623] font-semibold">MetricLab</span>
+        </p>
       </div>
     </div>
   );
@@ -400,19 +399,11 @@ function LoginCard() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-[#F7F7F5] relative overflow-hidden">
+    <div className="min-h-screen bg-[#F2F2F2] flex items-center justify-center p-4">
       <Suspense
         fallback={
           <div
-            style={{
-              width: 'calc(100% - 48px)',
-              maxWidth: '380px',
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-            }}
-            className="h-[220px] bg-white rounded-[16px] border border-[#E5E5E3] p-7 animate-pulse"
+            className="w-full max-w-[420px] h-[320px] bg-white rounded-[16px] border border-[#E2E2DC] p-8 animate-pulse"
           />
         }
       >
