@@ -76,7 +76,7 @@ export function HeaderMobile({
           </span>
         )}
         {rightBadge && (
-          <span className="bg-white border border-[#E2E2DC] rounded-none px-2 py-0.5 text-[12px] font-medium tracking-[0.04em] text-[#6B7280]">
+          <span className="bg-white border border-[#E2E2DC] rounded-[4px] px-2 py-0.5 text-[12px] font-medium tracking-[0.04em] text-[#6B7280]">
             {rightBadge}
           </span>
         )}

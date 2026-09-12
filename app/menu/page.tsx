@@ -97,17 +97,17 @@ export default function MenuPage() {
         </div>
 
         {/* Card de Resumo do Dia */}
-        <div className="bg-white border border-[#E2E2DC] rounded-none p-4 space-y-3">
+        <div className="bg-white border border-[#E2E2DC] rounded-[12px] p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
               Resumo do Dia
             </span>
             {hojeRDO ? (
-              <span className="bg-[#111111] text-white text-[12px] font-medium px-2.5 py-1 rounded-none">
+              <span className="bg-[#111111] text-white text-[12px] font-medium px-2.5 py-1 rounded-[4px]">
                 Enviado
               </span>
             ) : (
-              <span className="border border-[#111111] text-[#111111] bg-white text-[12px] font-medium px-2.5 py-1 rounded-none">
+              <span className="border border-[#111111] text-[#111111] bg-white text-[12px] font-medium px-2.5 py-1 rounded-[4px]">
                 Em andamento
               </span>
             )}
@@ -150,7 +150,7 @@ export default function MenuPage() {
           <button
             type="button"
             onClick={() => router.push('/rdo/novo')}
-            className="w-full text-left bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-none p-4 flex items-center justify-between transition-colors cursor-pointer group"
+            className="w-full text-left bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-[12px] p-4 flex items-center justify-between transition-colors cursor-pointer group"
           >
             <div className="space-y-0.5 pr-2">
               <div className="text-[15px] font-semibold text-[#111111]">
@@ -173,7 +173,7 @@ export default function MenuPage() {
                   : '/rdo/9dcae9a4-53fb-44d8-b3bc-6bca9c169cec'
               )
             }
-            className="w-full text-left bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-none p-4 flex items-center justify-between transition-colors cursor-pointer group"
+            className="w-full text-left bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-[12px] p-4 flex items-center justify-between transition-colors cursor-pointer group"
           >
             <div className="space-y-0.5 pr-2">
               <div className="text-[15px] font-semibold text-[#111111]">
@@ -190,7 +190,7 @@ export default function MenuPage() {
           <button
             type="button"
             onClick={() => router.push('/ocorrencia')}
-            className="w-full text-left bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-none p-4 flex items-center justify-between transition-colors cursor-pointer group"
+            className="w-full text-left bg-white border border-[#E2E2DC] hover:border-[#111111] rounded-[12px] p-4 flex items-center justify-between transition-colors cursor-pointer group"
           >
             <div className="space-y-0.5 pr-2">
               <div className="text-[15px] font-semibold text-[#111111]">

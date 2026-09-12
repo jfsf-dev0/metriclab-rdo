@@ -75,7 +75,7 @@ export default function DesktopBlockedPage() {
         </p>
 
         {/* QR Code centralizado, 160x160px */}
-        <div className="w-[160px] h-[160px] bg-white border border-[#E2E2DC] rounded-none p-2 flex items-center justify-center shadow-none mb-4">
+        <div className="w-[160px] h-[160px] bg-white border border-[#E2E2DC] rounded-[12px] p-2 flex items-center justify-center shadow-none mb-4">
           {qrCodeDataUrl ? (
             <img
               src={qrCodeDataUrl}
@@ -83,7 +83,7 @@ export default function DesktopBlockedPage() {
               className="w-full h-full object-contain"
             />
           ) : (
-            <div className="w-full h-full bg-[#F7F7F5] flex items-center justify-center text-[12px] text-[#9CA3AF]">
+            <div className="w-full h-full bg-[#F7F7F5] rounded-[8px] flex items-center justify-center text-[12px] text-[#9CA3AF]">
               Carregando...
             </div>
           )}

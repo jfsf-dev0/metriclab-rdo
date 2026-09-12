@@ -393,7 +393,7 @@ export default function NovoRDOPage() {
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <div className="w-full h-[2px] bg-[#E2E2DC] sticky top-0 z-30">
         <div
-          className="h-full bg-[#111111] transition-all duration-300 rounded-none"
+          className="h-full bg-[#111111] transition-all duration-300 rounded-full"
           style={{ width: `${(passo / 5) * 100}%` }}
         />
       </div>
@@ -423,7 +423,7 @@ export default function NovoRDOPage() {
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <div className="flex-1 max-w-md w-full mx-auto px-4 py-6 pb-32 space-y-6">
         {erro && (
-          <div className="p-4 bg-white border border-[#DC2626] text-[13px] text-[#DC2626]">
+          <div className="p-4 bg-white border border-[#DC2626] rounded-[8px] text-[13px] text-[#DC2626]">
             {erro}
           </div>
         )}
@@ -434,7 +434,7 @@ export default function NovoRDOPage() {
         {passo === 1 && (
           <div className="space-y-6">
             {/* Trecho e Data */}
-            <div className="space-y-4 bg-white border border-[#E2E2DC] p-4 rounded-none">
+            <div className="space-y-4 bg-white border border-[#E2E2DC] p-4 rounded-[12px]">
               <div>
                 <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-1">
                   TRECHO ATIVO
@@ -467,7 +467,7 @@ export default function NovoRDOPage() {
                       key={t}
                       type="button"
                       onClick={() => setTurno(t)}
-                      className={`h-[44px] text-[14px] font-medium rounded-none border transition-colors cursor-pointer ${
+                      className={`h-[44px] text-[14px] font-medium rounded-[8px] border transition-colors cursor-pointer ${
                         active
                           ? 'bg-[#111111] text-white border-[#111111]'
                           : 'bg-white text-[#111111] border-[#E2E2DC]'
@@ -494,7 +494,7 @@ export default function NovoRDOPage() {
                       key={c}
                       type="button"
                       onClick={() => setClimaManha(c)}
-                      className={`h-[44px] text-[14px] font-medium rounded-none border transition-colors cursor-pointer ${
+                      className={`h-[44px] text-[14px] font-medium rounded-[8px] border transition-colors cursor-pointer ${
                         active
                           ? 'bg-[#111111] text-white border-[#111111]'
                           : 'bg-white text-[#111111] border-[#E2E2DC]'
@@ -521,7 +521,7 @@ export default function NovoRDOPage() {
                       key={c}
                       type="button"
                       onClick={() => setClimaTarde(c)}
-                      className={`h-[44px] text-[14px] font-medium rounded-none border transition-colors cursor-pointer ${
+                      className={`h-[44px] text-[14px] font-medium rounded-[8px] border transition-colors cursor-pointer ${
                         active
                           ? 'bg-[#111111] text-white border-[#111111]'
                           : 'bg-white text-[#111111] border-[#E2E2DC]'
@@ -549,7 +549,7 @@ export default function NovoRDOPage() {
                 {Object.entries(efetivoCategorias).map(([cat, qtd]) => (
                   <div
                     key={cat}
-                    className="flex items-center justify-between bg-white border border-[#E2E2DC] p-3 rounded-none"
+                    className="flex items-center justify-between bg-white border border-[#E2E2DC] p-3 rounded-[8px]"
                   >
                     <span className="text-[14px] font-medium text-[#111111]">
                       {cat}
@@ -563,7 +563,7 @@ export default function NovoRDOPage() {
                             [cat]: Math.max(0, (prev[cat] || 0) - 1),
                           }))
                         }
-                        className="w-[36px] h-[36px] bg-[#F7F7F5] border border-[#E2E2DC] text-[16px] font-bold flex items-center justify-center cursor-pointer hover:bg-[#E2E2DC] rounded-none"
+                        className="w-[36px] h-[36px] bg-[#F7F7F5] border border-[#E2E2DC] text-[16px] font-bold flex items-center justify-center cursor-pointer hover:bg-[#E2E2DC] rounded-[8px]"
                       >
                         -
                       </button>
@@ -577,7 +577,7 @@ export default function NovoRDOPage() {
                             [cat]: parseInt(e.target.value) || 0,
                           }))
                         }
-                        className="w-[48px] h-[36px] text-center bg-white border border-[#E2E2DC] rounded-none text-[15px] font-semibold text-[#111111] focus:outline-none focus:border-[#111111]"
+                        className="w-[48px] h-[36px] text-center bg-white border border-[#E2E2DC] rounded-[8px] text-[15px] font-semibold text-[#111111] focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       />
                       <button
                         type="button"
@@ -587,7 +587,7 @@ export default function NovoRDOPage() {
                             [cat]: (prev[cat] || 0) + 1,
                           }))
                         }
-                        className="w-[36px] h-[36px] bg-[#F7F7F5] border border-[#E2E2DC] text-[16px] font-bold flex items-center justify-center cursor-pointer hover:bg-[#E2E2DC] rounded-none"
+                        className="w-[36px] h-[36px] bg-[#F7F7F5] border border-[#E2E2DC] text-[16px] font-bold flex items-center justify-center cursor-pointer hover:bg-[#E2E2DC] rounded-[8px]"
                       >
                         +
                       </button>
@@ -613,7 +613,7 @@ export default function NovoRDOPage() {
 
               <div
                 onClick={() => crachaInputRef.current?.click()}
-                className="border border-dashed border-[#E2E2DC] rounded-none p-5 bg-white flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-3"
+                className="border border-dashed border-[#E2E2DC] rounded-[12px] p-5 bg-white flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-3"
               >
                 {uploadingCracha ? (
                   <Loader2 className="w-5 h-5 text-[#6B7280] animate-spin mb-2" />
@@ -625,14 +625,14 @@ export default function NovoRDOPage() {
                 </span>
               </div>
 
-              <div className="divide-y divide-[#E2E2DC] border border-[#E2E2DC] bg-white">
+              <div className="divide-y divide-[#E2E2DC] border border-[#E2E2DC] bg-white rounded-[12px] overflow-hidden">
                 {equipe.map((m, idx) => (
                   <div key={idx} className="p-3 flex items-center justify-between">
                     <div>
                       <p className="text-[14px] font-medium text-[#111111]">{m.nome}</p>
                       <p className="text-[12px] text-[#9CA3AF]">{m.funcao}</p>
                     </div>
-                    <span className="bg-[#F7F7F5] border border-[#E2E2DC] text-[#6B7280] text-[12px] font-medium px-2 py-0.5 rounded-none">
+                    <span className="bg-[#F7F7F5] border border-[#E2E2DC] text-[#6B7280] text-[12px] font-medium px-2 py-0.5 rounded-[4px]">
                       Presente
                     </span>
                   </div>
@@ -657,7 +657,7 @@ export default function NovoRDOPage() {
                 return (
                   <div
                     key={maq.id}
-                    className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-3"
+                    className="bg-white border border-[#E2E2DC] p-4 rounded-[12px] space-y-3"
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -692,7 +692,7 @@ export default function NovoRDOPage() {
                                 [maq.id]: { ...check, status: st },
                               }))
                             }
-                            className={`h-[38px] text-[12px] font-medium rounded-none border transition-colors cursor-pointer ${
+                            className={`h-[38px] text-[12px] font-medium rounded-[8px] border transition-colors cursor-pointer ${
                               active
                                 ? 'bg-[#111111] text-white border-[#111111]'
                                 : 'bg-white text-[#111111] border-[#E2E2DC]'
@@ -719,7 +719,7 @@ export default function NovoRDOPage() {
                             }))
                           }
                           placeholder="Informe o motivo da paralisação ou serviço"
-                          className="w-full h-[48px] px-3 bg-white border border-[#E2E2DC] rounded-none text-[14px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-[#111111] focus:outline-none"
+                          className="w-full h-[48px] px-3 bg-white border border-[#E2E2DC] rounded-[8px] text-[14px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
                         />
                       </div>
                     )}
@@ -746,7 +746,7 @@ export default function NovoRDOPage() {
                 value={atividades}
                 onChange={(e) => setAtividades(e.target.value)}
                 placeholder="Descreva detalhadamente os serviços executados pelas equipes hoje..."
-                className="w-full p-4 bg-white border border-[#E2E2DC] rounded-none text-[15px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-[#111111] focus:outline-none resize-none transition-colors"
+                className="w-full p-4 bg-white border border-[#E2E2DC] rounded-[8px] text-[15px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none resize-none transition-all"
               />
             </div>
 
@@ -767,7 +767,7 @@ export default function NovoRDOPage() {
 
               <div
                 onClick={() => fotosInputRef.current?.click()}
-                className="border border-dashed border-[#E2E2DC] rounded-none p-6 bg-white flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-3"
+                className="border border-dashed border-[#E2E2DC] rounded-[12px] p-6 bg-white flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-3"
               >
                 {uploadingFotoDia ? (
                   <Loader2 className="w-5 h-5 text-[#6B7280] animate-spin mb-2" />
@@ -784,7 +784,7 @@ export default function NovoRDOPage() {
                   {fotosDia.map((f, idx) => (
                     <div
                       key={idx}
-                      className="relative aspect-square bg-[#F7F7F5] border border-[#E2E2DC] rounded-none overflow-hidden"
+                      className="relative aspect-square bg-[#F7F7F5] border border-[#E2E2DC] rounded-[8px] overflow-hidden"
                     >
                       <img
                         src={f}
@@ -794,7 +794,7 @@ export default function NovoRDOPage() {
                       <button
                         type="button"
                         onClick={() => setFotosDia((prev) => prev.filter((_, i) => i !== idx))}
-                        className="absolute top-1 right-1 bg-black/70 text-white text-[12px] w-5 h-5 flex items-center justify-center cursor-pointer hover:bg-black"
+                        className="absolute top-1 right-1 bg-black/70 text-white text-[12px] w-5 h-5 rounded-full flex items-center justify-center cursor-pointer hover:bg-black"
                       >
                         ×
                       </button>
@@ -828,7 +828,7 @@ export default function NovoRDOPage() {
                 )}
               </div>
 
-              <div className="border border-[#E2E2DC] bg-white h-[180px] w-full rounded-none relative overflow-hidden">
+              <div className="border border-[#E2E2DC] bg-white h-[180px] w-full rounded-[12px] relative overflow-hidden">
                 <canvas
                   ref={canvasRef}
                   onMouseDown={startDrawing}
@@ -849,7 +849,7 @@ export default function NovoRDOPage() {
             </div>
 
             {/* Localização GPS */}
-            <div className="bg-white border border-[#E2E2DC] p-4 rounded-none">
+            <div className="bg-white border border-[#E2E2DC] p-4 rounded-[12px]">
               <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-1">
                 LOCALIZAÇÃO GEOREFERENCIADA
               </span>
@@ -869,7 +869,7 @@ export default function NovoRDOPage() {
             </div>
 
             {/* Resumo */}
-            <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-2">
+            <div className="bg-white border border-[#E2E2DC] p-4 rounded-[12px] space-y-2">
               <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
                 RESUMO ANTES DO ENVIO
               </span>
@@ -894,7 +894,7 @@ export default function NovoRDOPage() {
             <button
               type="button"
               onClick={() => setPasso((prev) => (prev + 1) as any)}
-              className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-none transition-opacity flex items-center justify-center cursor-pointer"
+              className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-[8px] transition-opacity flex items-center justify-center cursor-pointer"
             >
               Próximo
             </button>
@@ -905,7 +905,7 @@ export default function NovoRDOPage() {
               type="button"
               disabled={submitting}
               onClick={handleSubmitRDO}
-              className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-none transition-opacity flex items-center justify-center cursor-pointer disabled:opacity-40"
+              className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-[8px] transition-opacity flex items-center justify-center cursor-pointer disabled:opacity-40"
             >
               {submitting ? 'Gravando RDO...' : 'Enviar RDO'}
             </button>

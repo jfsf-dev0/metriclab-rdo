@@ -22,7 +22,7 @@ export default function ConfirmacaoPage() {
       <main className="flex-1 flex flex-col justify-center max-w-sm w-full mx-auto space-y-6">
         {/* Ícone Minimalista e Identidade */}
         <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 bg-[#111111] text-white flex items-center justify-center rounded-none mb-4">
+          <div className="w-12 h-12 bg-[#111111] text-white flex items-center justify-center rounded-[8px] mb-4">
             <Check className="w-6 h-6 stroke-[2]" />
           </div>
 
@@ -35,7 +35,7 @@ export default function ConfirmacaoPage() {
         </div>
 
         {/* Resumo das Informações Principais em Grid 2 Colunas */}
-        <div className="bg-white border border-[#E2E2DC] p-4 rounded-none grid grid-cols-2 gap-4">
+        <div className="bg-white border border-[#E2E2DC] p-4 rounded-[12px] grid grid-cols-2 gap-4">
           <div>
             <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-0.5">
               TRECHO
@@ -78,7 +78,7 @@ export default function ConfirmacaoPage() {
           <button
             type="button"
             onClick={() => router.push(`/rdo/${id}`)}
-            className="w-full h-[52px] bg-[#111111] hover:bg-black text-white text-[15px] font-semibold rounded-none transition-colors flex items-center justify-center cursor-pointer"
+            className="w-full h-[52px] bg-[#111111] hover:bg-black text-white text-[15px] font-semibold rounded-[8px] transition-colors flex items-center justify-center cursor-pointer"
           >
             Ver RDO
           </button>
@@ -86,7 +86,7 @@ export default function ConfirmacaoPage() {
           <button
             type="button"
             onClick={() => router.push('/menu')}
-            className="w-full h-[52px] bg-white border border-[#111111] hover:bg-[#F7F7F5] text-[#111111] text-[15px] font-semibold rounded-none transition-colors flex items-center justify-center cursor-pointer"
+            className="w-full h-[52px] bg-white border border-[#111111] hover:bg-[#F7F7F5] text-[#111111] text-[15px] font-semibold rounded-[8px] transition-colors flex items-center justify-center cursor-pointer"
           >
             Voltar ao início
           </button>

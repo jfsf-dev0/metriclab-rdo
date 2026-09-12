@@ -13,11 +13,11 @@ export interface ButtonProps
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', fullWidth = false, loading, children, disabled, ...props }, ref) => {
     const variants = {
-      primary: 'bg-[#111111] hover:bg-black active:opacity-85 text-white font-semibold rounded-none transition-opacity disabled:opacity-40 shadow-none',
-      secondary: 'bg-white border border-[#111111] hover:bg-[#F7F7F5] active:opacity-85 text-[#111111] font-semibold rounded-none transition-opacity disabled:opacity-40 shadow-none',
-      danger: 'bg-[#DC2626] hover:bg-red-700 active:opacity-85 text-white font-semibold rounded-none transition-opacity disabled:opacity-40 shadow-none',
-      outline: 'bg-white border border-[#E2E2DC] text-[#111111] hover:border-[#111111] active:opacity-85 rounded-none font-medium transition-colors disabled:opacity-40 shadow-none',
-      ghost: 'bg-transparent text-[#6B7280] hover:text-[#111111] hover:bg-[#EFEFED] rounded-none transition-colors disabled:opacity-40',
+      primary: 'bg-[#111111] hover:bg-black active:opacity-85 text-white font-semibold rounded-[8px] transition-opacity disabled:opacity-40 shadow-none',
+      secondary: 'bg-white border border-[#111111] hover:bg-[#F7F7F5] active:opacity-85 text-[#111111] font-semibold rounded-[8px] transition-opacity disabled:opacity-40 shadow-none',
+      danger: 'bg-[#DC2626] hover:bg-red-700 active:opacity-85 text-white font-semibold rounded-[8px] transition-opacity disabled:opacity-40 shadow-none',
+      outline: 'bg-white border border-[#E2E2DC] text-[#111111] hover:border-[#111111] active:opacity-85 rounded-[8px] font-medium transition-colors disabled:opacity-40 shadow-none',
+      ghost: 'bg-transparent text-[#6B7280] hover:text-[#111111] hover:bg-[#EFEFED] rounded-[8px] transition-colors disabled:opacity-40',
     };
 
     const sizes = {

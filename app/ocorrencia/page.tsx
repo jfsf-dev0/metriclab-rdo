@@ -204,7 +204,7 @@ export default function OcorrenciaPage() {
                     key={t}
                     type="button"
                     onClick={() => setTipo(t)}
-                    className={`h-[44px] px-3 text-[14px] font-medium rounded-none border transition-colors cursor-pointer text-left flex items-center justify-between ${
+                    className={`h-[44px] px-3 text-[14px] font-medium rounded-[8px] border transition-colors cursor-pointer text-left flex items-center justify-between ${
                       active
                         ? 'bg-[#111111] text-white border-[#111111]'
                         : 'bg-white text-[#111111] border-[#E2E2DC]'
@@ -231,7 +231,7 @@ export default function OcorrenciaPage() {
                     key={g}
                     type="button"
                     onClick={() => setGravidade(g)}
-                    className={`h-[44px] text-[13px] font-medium rounded-none border transition-colors cursor-pointer ${
+                    className={`h-[44px] text-[13px] font-medium rounded-[8px] border transition-colors cursor-pointer ${
                       active
                         ? 'bg-[#111111] text-white border-[#111111]'
                         : 'bg-white text-[#111111] border-[#E2E2DC]'
@@ -255,7 +255,7 @@ export default function OcorrenciaPage() {
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
               placeholder="Relate detalhadamente o ocorrido, pessoas envolvidas e ações preliminares tomadas..."
-              className="w-full p-4 bg-white border border-[#E2E2DC] rounded-none text-[15px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-[#111111] focus:outline-none resize-none transition-colors"
+              className="w-full p-4 bg-white border border-[#E2E2DC] rounded-[8px] text-[15px] text-[#111111] placeholder:text-[#9CA3AF] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none resize-none transition-all"
             />
           </div>
 
@@ -275,7 +275,7 @@ export default function OcorrenciaPage() {
 
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border border-dashed border-[#E2E2DC] rounded-none p-6 bg-white flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-3"
+              className="border border-dashed border-[#E2E2DC] rounded-[12px] p-6 bg-white flex flex-col items-center justify-center cursor-pointer hover:border-[#111111] transition-colors mb-3"
             >
               {uploadingFoto ? (
                 <Loader2 className="w-5 h-5 text-[#6B7280] animate-spin mb-2" />
@@ -292,7 +292,7 @@ export default function OcorrenciaPage() {
                 {fotos.map((f, idx) => (
                   <div
                     key={idx}
-                    className="relative aspect-square bg-[#F7F7F5] border border-[#E2E2DC] rounded-none overflow-hidden"
+                    className="relative aspect-square bg-[#F7F7F5] border border-[#E2E2DC] rounded-[8px] overflow-hidden"
                   >
                     <img
                       src={f}
@@ -302,7 +302,7 @@ export default function OcorrenciaPage() {
                     <button
                       type="button"
                       onClick={() => handleRemoveFoto(idx)}
-                      className="absolute top-1 right-1 bg-black/70 text-white text-[12px] w-5 h-5 flex items-center justify-center cursor-pointer hover:bg-black"
+                      className="absolute top-1 right-1 bg-black/70 text-white text-[12px] w-5 h-5 rounded-full flex items-center justify-center cursor-pointer hover:bg-black"
                     >
                       ×
                     </button>
@@ -313,7 +313,7 @@ export default function OcorrenciaPage() {
           </div>
 
           {/* Localização */}
-          <div className="bg-white border border-[#E2E2DC] p-4 rounded-none">
+          <div className="bg-white border border-[#E2E2DC] p-4 rounded-[12px]">
             <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-1">
               LOCALIZAÇÃO DA OCORRÊNCIA
             </span>
@@ -338,7 +338,7 @@ export default function OcorrenciaPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-none transition-opacity flex items-center justify-center cursor-pointer disabled:opacity-40"
+                className="w-full h-[52px] bg-[#111111] hover:bg-black active:opacity-85 text-white text-[15px] font-semibold rounded-[8px] transition-opacity flex items-center justify-center cursor-pointer disabled:opacity-40"
               >
                 {submitting ? 'Registrando ocorrência...' : 'Registrar Ocorrência'}
               </button>
