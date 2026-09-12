@@ -14,6 +14,7 @@ import {
 import { getSession } from '@/lib/auth';
 import { Camera, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 import { useDesktopBlock } from '@/hooks/useDesktopBlock';
+import { useGeolocation } from '@/hooks/useGeolocation';
 
 export default function NovoRDOPage() {
   useDesktopBlock();
@@ -27,8 +28,7 @@ export default function NovoRDOPage() {
   const [turno, setTurno] = useState<'manha' | 'tarde' | 'noite'>('manha');
   const [climaManha, setClimaManha] = useState<'bom' | 'nublado' | 'chuva'>('bom');
   const [climaTarde, setClimaTarde] = useState<'bom' | 'nublado' | 'chuva'>('nublado');
-  const [geolat, setGeolat] = useState<number>(-23.5505);
-  const [geolng, setGeolng] = useState<number>(-46.6333);
+  const { latitude, longitude, accuracy, error: geoError, loading: geoLoading } = useGeolocation();
 
   // PASSO 2: Efetivo (Categorias com inputs de quantidade + membros)
   const [efetivoCategorias, setEfetivoCategorias] = useState<Record<string, number>>({
@@ -110,17 +110,6 @@ export default function NovoRDOPage() {
         }
         setLoadingInitial(false);
       });
-
-    if (typeof window !== 'undefined' && 'geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setGeolat(Number(pos.coords.latitude.toFixed(4)));
-          setGeolng(Number(pos.coords.longitude.toFixed(4)));
-        },
-        () => {},
-        { timeout: 5000 }
-      );
-    }
   }, [router]);
 
   // Setup canvas
@@ -329,8 +318,12 @@ export default function NovoRDOPage() {
           clima_temperatura: 26,
           clima_umidade: 65,
           clima_vento: 10,
-          geolat,
-          geolng,
+          geolat: latitude,
+          geolng: longitude,
+          latitude,
+          longitude,
+          accuracy,
+          geolocated_at: new Date().toISOString(),
           atividades: atividades.trim() || 'Atividades regulares de terraplenagem e drenagem.',
           equipe,
           maquinas: maquinasPayload,
@@ -856,13 +849,23 @@ export default function NovoRDOPage() {
             </div>
 
             {/* Localização GPS */}
-            <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-1">
-              <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+            <div className="bg-white border border-[#E2E2DC] p-4 rounded-none">
+              <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-1">
                 LOCALIZAÇÃO GEOREFERENCIADA
               </span>
-              <p className="text-[14px] text-[#111111]">
-                Lat: {geolat} · Lng: {geolng}
-              </p>
+              {geoLoading ? (
+                <p className="text-[12px] font-normal text-[#9CA3AF]">
+                  Obtendo localização...
+                </p>
+              ) : geoError !== null ? (
+                <p className="text-[12px] font-normal text-[#DC2626]">
+                  Localização indisponível — verifique as permissões do celular
+                </p>
+              ) : (
+                <p className="text-[12px] font-normal text-[#6B7280]">
+                  Localização capturada
+                </p>
+              )}
             </div>
 
             {/* Resumo */}

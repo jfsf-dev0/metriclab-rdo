@@ -30,6 +30,7 @@ const TIPOS: TipoOcorrencia[] = [
 const GRAVIDADES: Gravidade[] = ['Baixa', 'Média', 'Alta', 'Crítica'];
 
 import { useDesktopBlock } from '@/hooks/useDesktopBlock';
+import { useGeolocation } from '@/hooks/useGeolocation';
 
 export default function OcorrenciaPage() {
   useDesktopBlock();
@@ -43,9 +44,7 @@ export default function OcorrenciaPage() {
   const [fotos, setFotos] = useState<string[]>([]);
   const [uploadingFoto, setUploadingFoto] = useState(false);
 
-  const [geolat, setGeolat] = useState<number | null>(null);
-  const [geolng, setGeolng] = useState<number | null>(null);
-  const [gpsLoading, setGpsLoading] = useState(false);
+  const { latitude, longitude, accuracy, error: geoError, loading: geoLoading } = useGeolocation();
 
   const [submitting, setSubmitting] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -65,32 +64,7 @@ export default function OcorrenciaPage() {
       cargo: s.cargo || 'Encarregado',
     };
     setSession(currentSession);
-    capturarGPS();
   }, [router]);
-
-  const capturarGPS = () => {
-    setGpsLoading(true);
-
-    if (typeof window !== 'undefined' && 'geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setGeolat(Number(pos.coords.latitude.toFixed(4)));
-          setGeolng(Number(pos.coords.longitude.toFixed(4)));
-          setGpsLoading(false);
-        },
-        () => {
-          setGeolat(-23.5505);
-          setGeolng(-46.6333);
-          setGpsLoading(false);
-        },
-        { timeout: 8000, enableHighAccuracy: true }
-      );
-    } else {
-      setGeolat(-23.5505);
-      setGeolng(-46.6333);
-      setGpsLoading(false);
-    }
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -154,8 +128,12 @@ export default function OcorrenciaPage() {
           gravidade,
           descricao: descricao.trim(),
           fotos,
-          geolat: geolat || -23.5505,
-          geolng: geolng || -46.6333,
+          geolat: latitude,
+          geolng: longitude,
+          latitude,
+          longitude,
+          accuracy,
+          geolocated_at: new Date().toISOString(),
           resolvido: false,
         })
         .select()
@@ -335,24 +313,22 @@ export default function OcorrenciaPage() {
           </div>
 
           {/* Localização */}
-          <div className="bg-white border border-[#E2E2DC] p-4 rounded-none space-y-1">
-            <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+          <div className="bg-white border border-[#E2E2DC] p-4 rounded-none">
+            <span className="block text-[12px] font-medium uppercase tracking-[0.08em] text-[#6B7280] mb-1">
               LOCALIZAÇÃO DA OCORRÊNCIA
             </span>
-            {gpsLoading ? (
-              <p className="text-[13px] text-[#9CA3AF]">Obtendo coordenadas GPS...</p>
-            ) : geolat && geolng ? (
-              <p className="text-[14px] text-[#111111]">
-                Lat: {geolat} · Lng: {geolng}
+            {geoLoading ? (
+              <p className="text-[12px] font-normal text-[#9CA3AF]">
+                Obtendo localização...
+              </p>
+            ) : geoError !== null ? (
+              <p className="text-[12px] font-normal text-[#DC2626]">
+                Localização indisponível — verifique as permissões do celular
               </p>
             ) : (
-              <button
-                type="button"
-                onClick={capturarGPS}
-                className="text-[13px] font-medium text-[#111111] underline cursor-pointer"
-              >
-                Capturar GPS
-              </button>
+              <p className="text-[12px] font-normal text-[#6B7280]">
+                Localização capturada
+              </p>
             )}
           </div>
 
